@@ -12,8 +12,10 @@ services:
       - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/compliance_db
       - REDIS_URL=redis://cache:6379/0
     depends_on:
-      - db
-      - cache
+      db:
+        condition: service_healthy # Wait for DB to be truly ready
+      cache:
+        condition: service_started
 
   # 2. The Database (The Vault)
   db:
@@ -24,6 +26,12 @@ services:
       - POSTGRES_DB=compliance_db
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # This command pings the DB until it responds successfully
+      test: ["CMD-SHELL", "pg_isready -U user -d compliance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # 3. The Cache (For high-speed temporary memory)
   cache:
