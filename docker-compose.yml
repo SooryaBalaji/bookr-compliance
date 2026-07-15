@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # 1. The Backend (Your Python App)
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/compliance_db
+      - REDIS_URL=redis://cache:6379/0
+    depends_on:
+      - db
+      - cache
+
+  # 2. The Database (The Vault)
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=compliance_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  # 3. The Cache (For high-speed temporary memory)
+  cache:
+    image: redis:7-alpine
+
+# This ensures your database doesn't wipe itself when you turn the server off
+volumes:
+  db-data:
