@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookr, Inc. Corporate Compliance Command Centre</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght=0,9..144,300..600;1,9..144,400&family=IBM+Plex+Mono:wght=400;500&family=Inter:wght=400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS VARIABLE PATTERNS & THEME DEFINITIONS */
+    :root {
+      --bg: #fbfbfa;
+      --surface: #ffffff;
+      --surface2: #f4f4f2;
+      --border: #e4e4e0;
+      --border-soft: #ededea;
+      
+      --ink: #1c1c1a;
+      --ink-dim: #5c5c57;
+      --ink-faint: #9c9c93;
+      --brass: #826e4d;
+      --brass-soft: #dcd6cd;
+
+      /* Scope Matrix Color Tags */
+      --fed: #1e3a8a;
+      --ca: #b91c1c;
+      --de: #0d9488;
+      --intl: #4b5563;
+      --ins: #7c3aed; 
+
+      /* Target Status Indicators */
+      --overdue: #dc2626;
+      --soon: #d97706;
+      --month: #ca8a04;
+      --filed: #16a34a;
+      --upcoming: #2563eb;
+      --needsdate: #7c3aed;
+
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Frame Command Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .brand-title {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--brass);
+      border-bottom: 2px solid var(--brass-soft);
+      padding-bottom: 12px;
+    }
+
+    .sidebar-section h4 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-dim);
+      margin-bottom: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .stat-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .stat-line .n { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .stat-line.overdue .n { color: var(--overdue); }
+    .stat-line.soon .n { color: var(--soon); }
+    .stat-line.month .n { color: var(--month); }
+    .stat-line.filed .n { color: var(--filed); }
+    .stat-line.upcoming .n { color: var(--upcoming); }
+    .stat-line.needsdate .n { color: var(--needsdate); }
+
+    .scope-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      border-radius: var(--radius);
+      transition: background 0.2s;
+    }
+    .scope-line:hover { background: var(--bg); }
+    .scope-line.off { opacity: 0.35; text-decoration: line-through; }
+    .scope-line .swatch { width: 10px; height: 10px; border-radius: 50%; }
+    .scope-line .cnt { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); }
+
+    .unsched-item {
+      font-size: 12px;
+      background: #faf5ff;
+      border: 1px solid #e9d5ff;
+      color: #6b21a8;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .unsched-empty { font-size: 12px; color: var(--ink-faint); font-style: italic; }
+
+    /* Main Panel Viewports */
+    .main-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .control-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .top-bar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title-cluster h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 8px; 
+    }
+
+    .view-toggle button, .nav-cluster button, .btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .view-toggle button:hover, .nav-cluster button:hover, .btn:hover { background: var(--bg); border-color: var(--ink-dim); }
+    .view-toggle button.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    .btn.primary { background: var(--brass); color: var(--surface); border-color: var(--brass); }
+    .btn.primary:hover { background: #6e5d40; border-color: #6e5d40; }
+    .btn.mini { font-size: 11px; padding: 3px 8px; }
+    .btn.ghost { border-color: transparent; background: transparent; color: var(--ink-dim); }
+    .btn.ghost:hover { background: var(--border-soft); color: var(--ink); }
+
+    /* Delete Button UI */
+    .btn-delete {
+      background: transparent;
+      border: 1px solid var(--overdue);
+      color: var(--overdue);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-delete:hover { background: #fef2f2; }
+
+    /* Unified Search Group */
+    .search-group {
+      display: flex;
+      align-items: center;
+    }
+    .search-group select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-right: none;
+      padding: 6px 10px;
+      border-radius: var(--radius) 0 0 var(--radius);
+      color: var(--ink-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-group select:hover { background: var(--border-soft); }
+    .search-group input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: var(--ink);
+      width: 220px;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+    .search-group input:focus {
+      border-color: var(--ink-dim);
+    }
+
+    .select-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+    }
+
+    .display-workspace {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    /* Calendar Grid Layouts */
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: 600;
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--ink-dim);
+      margin-bottom: 8px;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: minmax(110px, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .day-cell {
+      background: var(--surface);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .day-cell:hover { background: var(--bg); }
+    .day-cell.outside { background: var(--surface2); color: var(--ink-faint); cursor: default; }
+    .day-cell.today { background: #fffbeb; box-shadow: inset 0 0 0 2px #fef3c7; }
+
+    .daynum { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+
+    .chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--surface);
+    }
+    .chip.overdue { background: var(--overdue); }
+    .chip.soon { background: var(--soon); }
+    .chip.month { background: var(--month); }
+    .chip.filed { background: var(--filed); }
+    .chip.upcoming { background: var(--upcoming); }
+    .chip.needsdate { background: var(--needsdate); }
+
+    /* Master Ledger Workspaces */
+    .master-ledger-container {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .quarter-section-lane {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .quarter-lane-title {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      color: var(--brass);
+      border-bottom: 2px solid var(--brass-soft);
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quarter-lane-title .count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--ink-dim);
+      background: var(--surface2);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .list-month-header {
+      font-family: 'Fraunces', serif;
+      font-size: 14px;
+      color: var(--ink-dim);
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 4px;
+      margin: 16px 0 10px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .task-card .num-col {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--ink-faint);
+      font-size: 12px;
+    }
+
+    .task-card .body-col { flex: 1; padding: 16px; position: relative; }
+    .task-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px; }
+    .task-top h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+    .status-block { display: flex; align-items: center; gap: 10px; }
+    .badge {
+      width: 45px;
+      height: 18px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--surface);
+      font-weight: bold;
+    }
+    .badge.overdue, .badge.Q1 { background: var(--overdue); }
+    .badge.soon, .badge.Q2 { background: var(--soon); }
+    .badge.filed, .badge.Q3 { background: var(--filed); }
+    .badge.upcoming, .badge.Q4 { background: var(--upcoming); }
+    .badge.needsdate, .badge.ROLL { background: var(--needsdate); }
+    .badge.INSURANCE { background: #7c3aed; width: auto; padding: 0 8px; }
+
+    .status-label { font-size: 12px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; font-weight: 500; display: inline-block; letter-spacing: 0.02em; }
+    .status-label.overdue { color: var(--overdue); }
+    .status-label.soon { color: var(--soon); }
+    .status-label.month { color: var(--month); }
+    .status-label.filed { color: var(--filed); }
+    .status-label.upcoming { color: var(--upcoming); }
+    .status-label.needsdate { color: var(--needsdate); }
+
+    .meta-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .pill { font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 12px; color: #fff; }
+    .pill.scope-fed { background: var(--fed); }
+    .pill.scope-ca { background: var(--ca); }
+    .pill.scope-de { background: var(--de); }
+    .pill.scope-intl { background: var(--intl); }
+    .pill.scope-ins { background: var(--ins); }
+    
+    .due-text { font-size: 12px; color: var(--ink-dim); font-weight: 500; }
+    .due-text .cap { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+
+    .action-row { display: flex; gap: 8px; align-items: center; border-top: 1px dashed var(--border-soft); padding-top: 12px; margin-top: 12px; }
+
+    .inline-form { display: none; margin-top: 12px; padding: 16px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
+    .inline-form.open { display: block; }
+    
+    .form-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); text-transform: uppercase; }
+    .field input, .field select, .field textarea { background: var(--surface); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; color: var(--ink); font-family: inherit; font-size: 13px; width: 100%; }
+
+    /* Structural Overlays */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(28, 28, 26, 0.4); backdrop-filter: blur(2px);
+      display: none; align-items: center; justify-content: center; z-index: 1000;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-container {
+      background: var(--surface); border: 1px solid var(--border);
+      width: 100%; max-width: 800px; max-height: 85vh; border-radius: 8px;
+      display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { font-family: 'Fraunces', serif; font-size: 20px; color: var(--brass); }
+    .modal-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
+    .modal-empty { text-align: center; padding: 40px; color: var(--ink-faint); font-style: italic; }
+
+    /* Redesigned Form / Wizard Layout Layouts */
+    .task-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .task-form-grid .full-width { grid-column: span 2; }
+    .task-form-three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    /* Redesigned Modern History / Audit Rows */
+    .history-archive-stack { display: flex; flex-direction: column; gap: 12px; }
+    .history-archive-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; display: grid; grid-template-columns: 140px 1fr 150px 100px; align-items: center; gap: 16px;
+    }
+    .history-archive-card .timestamp { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-dim); }
+    .history-archive-card .details { display: flex; flex-direction: column; gap: 4px; }
+    .history-archive-card .details h4 { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px;}
+    .history-archive-card .details p { font-size: 12px; color: var(--ink-dim); }
+    .history-archive-card .details .note { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+    .history-archive-card .cycle { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink); }
+    .history-archive-card .actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+
+    .empty-state { padding: 48px; text-align: center; color: var(--ink-faint); font-style: italic; border: 1px dashed var(--border); border-radius: var(--radius); }
+    
+    .dl-link { color: var(--brass); text-decoration: none; font-weight: 500; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    .dl-link:hover { text-decoration: underline; }
+
+    .history-panel { display: none; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .history-panel.open { display: block; }
+    .history-panel table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    .history-panel th { background: var(--surface2); padding: 8px 14px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); font-size: 11px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+    .history-panel td { padding: 10px 14px; border-bottom: 1px solid var(--border-soft); background: var(--surface); vertical-align: middle; }
+    .history-empty { text-align: center; color: var(--ink-faint); font-style: italic; padding: 16px !important; }
+    .del-x { color: var(--overdue); cursor: pointer; font-weight: bold; text-align: center; font-size: 14px; width: 40px; }
+    .del-x:hover { background: #fef2f2; }
+    
+    .del-btn-icon { color: var(--ink-faint); cursor: pointer; font-size: 16px; font-weight: 500; padding: 2px 6px; border-radius: 4px; transition: all 0.2s; }
+    .del-btn-icon:hover { color: var(--overdue); background: #fef2f2; }
+
+    /* Report Specific Styles */
+    .report-stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; }
+    .report-stat-box h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
+    .report-stat-box h2 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="brand-title">Bookr, Inc.</div>
+      <div class="sidebar-section">
+        <h4>Status Matrix <span style="font-size:10px; opacity:0.6;" id="matrixYearLabel"></span></h4>
+        <div id="statsList"></div>
+      </div>
+      <div class="sidebar-section">
+        <h4>Jurisdictions</h4>
+        <div id="scopeList"></div>
+      </div>
+      <div class="sidebar-section">
+        <h4>Floating Milestones</h4>
+        <div id="unschedList"></div>
+      </div>
+    </div>
+
+    <div class="main-panel">
+      <div class="control-header">
+        <div class="top-bar-row">
+          <div class="header-title-cluster">
+            <h2 id="monthTitle">Corporate Framework View</h2>
+          </div>
+          <div class="toolbar">
+            
+            <div class="search-group">
+              <select id="quickFilterSelect">
+                <option value="all">All Filters</option>
+                <optgroup label="Jurisdictions">
+                  <option value="fed">Federal Only</option>
+                  <option value="ca">California Only</option>
+                  <option value="de">Delaware Only</option>
+                  <option value="intl">Internal Only</option>
+                  <option value="ins">Insurance Only</option>
+                </optgroup>
+                <optgroup label="Timeframes">
+                  <option value="1w">Due < 7 Days</option>
+                  <option value="2w">Due < 14 Days</option>
+                  <option value="1m">Due < 30 Days</option>
+                </optgroup>
+                <optgroup label="Status Check">
+                  <option value="overdue_q">Overdue Only</option>
+                  <option value="filed_q">Executed Only</option>
+                </optgroup>
+              </select>
+              <input type="text" id="searchBox" placeholder="Search parameters...">
+            </div>
+
+            <div class="view-toggle"></div>
+            <button id="addMilestoneBtn" class="btn small primary">+ Add Task</button>
+            <button id="generateReportBtn" class="btn small primary" style="background:var(--ink); border-color:var(--ink);">Generate Report</button>
+            <button id="exportCsv" class="btn small">Export Ledger</button>
+          </div>
+        </div>
+
+        <div class="top-bar-row" id="calNavCluster" style="justify-content: flex-start; gap: 12px;">
+          <div class="nav-cluster" id="calendarControls">
+            <button id="prevMonth">Prior</button>
+            <button id="todayBtn">Current Cycle</button>
+            <button id="nextMonth">Forward</button>
+          </div>
+          <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
+            <label style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-dim)">Fiscal Cycle:</label>
+            <select id="yearSelect" class="select-input"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="display-workspace" id="mainContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="modalTitle">Structural Pipeline Records</h2>
+        <button id="modalCloseBtn" class="btn small">Close Window</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+  let CORE_TASKS = [
+    {
+      id:'1099nec', num:1, quarter:'Q1', scope:'Federal', short:'1099-NEC',
+      title:'Form 1099-NEC Filing & Distribution',
+      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'IRS FIRE System', url:'https://fire.irs.gov/'},
+      altNote:'Can also be filed directly through payroll software such as Gusto or Rippling.',
+      info:'Required only if Bookr paid an unincorporated contractor, freelancer, or unincorporated LLC $600 or more in the prior calendar year via ACH, check, or wire. Pebble LLC is paid by company credit card, so Pebble is exempt regardless of amount. Confirm against your actual vendor payment ledger.'
+    },
+    {
+      id:'w2w3', num:2, quarter:'Q1', scope:'Federal', short:'W-2 / W-3',
+      title:'Wage and Tax Statements (Forms W-2 & W-3)',
+      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'SSA Business Services Online', url:'https://www.ssa.gov/bso'},
+      altNote:'Managed comprehensively through your integrated Gusto workspace platform configurations.',
+      info:'Applies — public listings put Bookr at roughly 11–60 W-2 employees, so this filing is live every year. The W-2 reports individual employee earnings/withholdings; the W-3 is the master transmittal filed with SSA.'
+    },
+    {
+      id:'941q4', num:3, quarter:'Q1', scope:'Federal', short:'941 Q4',
+      title:'Federal Employer’s Quarterly Tax Return (Form 941) — Q4 filing',
+      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Gusto automated scheduling runs this background process pipeline cleanly.',
+      info:'Reconciles federal income tax withholding plus Social Security and Medicare tax for Q4. Bookr has no proprietary software engineering function, so Line 11 stays blank — no R&D payroll tax offset applies.'
+    },
+    {
+      id:'940', num:4, quarter:'Q1', scope:'Federal', short:'940 FUTA',
+      title:'Federal Annual Unemployment Tax Return (Form 940)',
+      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Handled natively by payroll processing parameters within Gusto.',
+      info:'Assesses FUTA liability on the first $7,000 paid to each individual W-2 employee for the year. Applies given Bookr’s active payroll.'
+    },
+    {
+      id:'de9q4', num:5, quarter:'Q1', scope:'California', short:'DE 9/9C Q4',
+      title:'CA EDD Quarterly Payroll Returns (DE 9 & DE 9C) — Q4 filing',
+      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'CA EDD e-Services for Business', url:'https://eddservices.edd.ca.gov/'},
+      altNote:'Gusto updates status parameter arrays automatically.',
+      info:'DE 9 reconciles total state payroll tax; DE 9C reports individual employee wage and SDI detail. Applies — Bookr is headquartered and staffed in California.'
+    },
+    {
+      id:'defranchise', num:6, quarter:'Q1', scope:'Delaware', short:'DE Franchise Tax',
+      title:'Delaware Annual Franchise Tax & Report',
+      dueType:'fixed', dueMonth:3, dueDay:1, dueText:'March 1',
+      entity:'Bookr, Inc. (DE)',
+      portal:{name:'Delaware Division of Corporations — eCorp', url:'https://icis.corp.delaware.gov/Ecorp/LoginTax.aspx?FilingType=FranchiseTax'},
+      info:'Confirmed applicable: Bookr’s CA Secretary of State record lists "Formed In: Delaware," meaning it is a Delaware corporation foreign‑qualified in California. Use the Assumed Par Value Capital Method for the lowest tier. $50 filing fee + $400 minimum tax.'
+    },
+    {
+      id:'571l', num:7, quarter:'Q2', scope:'California', short:'571-L',
+      title:'California Business Property Statement (Form 571-L)',
+      dueType:'fixed', dueMonth:4, dueDay:1, dueText:'April 1',
+      entity:'Bookr, Inc.',
+      portal:{name:'Contra Costa County Assessor — e-SDR', url:'https://www.contracosta.ca.gov/5498/Business-Personal-Property-e-File'},
+      info:'A 10% late penalty applies if not filed/postmarked by May 7. Only required if unsecured business personal property (servers, furniture, computers) at the Walnut Creek office totals $100,000+ in historical cost.'
+    },
+    {
+      id:'1120', num:8, quarter:'Q2', scope:'Federal', short:'Form 1120',
+      title:'U.S. Corporation Income Tax Return (Form 1120)',
+      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS (payment)', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Can be extended six months to October 15 by filing Form 7004 before this date.',
+      info:'Core federal income tax return — always applies to a C-corp. Tracks service revenue from non-profit clients minus operating costs; vendor platform subscription fees are deducted as ordinary business deductions.'
+    },
+    {
+      id:'ftb100', num:9, quarter:'Q2', scope:'California', short:'FTB Form 100',
+      title:'CA Corporation Franchise & Income Tax Return (FTB Form 100)',
+      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
+      altNote:'California grants an automatic paperwork extension to November 15, but any tax owed must still be paid by April 15.',
+      info:'Confirmed applicable — Bookr’s public filing record shows Franchise Tax Board standing as "Good." Assesses CA’s flat 8.84% rate on income apportioned to the state. The $800 annual minimum franchise tax is due every year.'
+    },
+    {
+      id:'fed1120w1', num:10, quarter:'Q2', scope:'Federal', short:'1120-W #1',
+      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 1',
+      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      info:'Required once Bookr anticipates annual federal corporate income tax liability of $500 or more.'
+    },
+    {
+      id:'ca100es1', num:11, quarter:'Q2', scope:'California', short:'100-ES #1',
+      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 1',
+      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
+      info:'California uses an uneven schedule — this first installment must cover 30% of estimated annual state tax.'
+    },
+    {
+      id:'941de9q1', num:12, quarter:'Q2', scope:'Federal', short:'941 / DE9 Q1',
+      title:'Form 941 & CA EDD DE 9/9C — Q1 filing',
+      dueType:'fixed', dueMonth:4, dueDay:30, dueText:'April 30',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Processed in full through dynamic backend actions in Gusto.',
+      info:'Regular quarterly reporting of Q1 employee payroll withholdings and matching corporate payroll taxes.'
+    },
+    {
+      id:'fed1120w2', num:13, quarter:'Q2', scope:'Federal', short:'1120-W #2',
+      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 2',
+      dueType:'fixed', dueMonth:6, dueDay:15, dueText:'June 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      info:'Second quarterly installment of estimated federal corporate income tax.'
+    },
+    {
+      id:'ca100es2', num:14, quarter:'Q2', scope:'California', short:'100-ES #2',
+      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 2',
+      dueType:'fixed', dueMonth:6, dueDay:15, dueText:'June 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
+      info:'This second installment must cover 40% of estimated annual state tax.'
+    },
+    {
+      id:'941de9q2', num:15, quarter:'Q3', scope:'Federal', short:'941 / DE9 Q2',
+      title:'Form 941 & CA EDD DE 9/9C — Q2 filing',
+      dueType:'fixed', dueMonth:7, dueDay:31, dueText:'July 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Automated framework updates managed via Gusto accounts.',
+      info:'Regular quarterly reporting of Q2 employee payroll withholdings and matching corporate payroll taxes.'
+    },
+    {
+      id:'fed1120w3', num:16, quarter:'Q3', scope:'Federal', short:'1120-W #3',
+      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 3',
+      dueType:'fixed', dueMonth:9, dueDay:15, dueText:'September 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      info:'Third quarterly installment of estimated federal corporate income tax.'
+    },
+    {
+      id:'ca100es3', num:17, quarter:'Q3', scope:'California', short:'100-ES #3',
+      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 3',
+      dueType:'fixed', dueMonth:9, dueDay:15, dueText:'September 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
+      info:'Under California’s staggered model this installment’s allocation is 0% — no payment due — provided the prior installments were paid.'
+    },
+    {
+      id:'941de9q3', num:18, quarter:'Q4', scope:'Federal', short:'941 / DE9 Q3',
+      title:'Form 941 & CA EDD DE 9/9C — Q3 filing',
+      dueType:'fixed', dueMonth:10, dueDay:31, dueText:'October 31',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
+      altNote:'Corporate updates deployed to state agencies through Gusto pipelines.',
+      info:'Regular quarterly reporting of Q3 employee payroll withholdings and matching corporate payroll taxes.'
+    },
+    {
+      id:'fed1120w4', num:19, quarter:'Q4', scope:'Federal', short:'1120-W #4',
+      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 4',
+      dueType:'fixed', dueMonth:12, dueDay:15, dueText:'December 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
+      info:'Fourth and final quarterly installment of estimated federal corporate income tax.'
+    },
+    {
+      id:'ca100es4', num:20, quarter:'Q4', scope:'California', short:'100-ES #4',
+      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 4',
+      dueType:'fixed', dueMonth:12, dueDay:15, dueText:'December 15',
+      entity:'Bookr, Inc.',
+      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
+      info:'Covers the remaining 30% allocation of estimated annual California corporate tax.'
+    },
+    {
+      id:'si550', num:21, quarter:'ROLL', scope:'California', short:'Form SI-550',
+      title:'California Statement of Information (Form SI-550)',
+      dueType:'fixed', dueMonth:8, dueDay:31, dueText:'August 31 (anniversary month)',
+      entity:'Bookr, Inc.',
+      portal:{name:'CA Secretary of State — bizfile Online', url:'https://bizfileonline.sos.ca.gov/'},
+      info:'Confirmed from Bookr’s public SOS record: late August is the real annual deadline. Filing fee $25. Missing it triggers an automatic $250 penalty.'
+    },
+    {
+      id:'wcbiz', num:22, quarter:'ROLL', scope:'California', short:'WC Business License',
+      title:'City of Walnut Creek Business Tax Certificate (Business License)',
+      dueType:'rolling', dueText:'Annually — due on the last day of the month before expiration.',
+      entity:'Bookr, Inc.',
+      portal:{name:'Walnut Creek HdLgov Business Portal', url:'https://walnutcreek.hdlgov.com/'},
+      info:'Confirmed applicable — Bookr’s headquarters at 2099 Mt. Diablo Blvd is inside Walnut Creek city limits. Missing renewal triggers an immediate 25% penalty.'
+    },
+    {
+      id:'formalities', num:23, quarter:'ROLL', scope:'Internal', short:'Corp Formalities',
+      title:'Mandatory Annual Corporate Formalities',
+      dueType:'rolling', dueText:'Annually — best practice is to finalize within 5 months of fiscal year close.',
+      entity:'Bookr, Inc.',
+      portal:null,
+      portalNote:'Internal record keeping only — no government portal. Executed via secure document software.',
+      info:'To preserve the corporate veil, Bookr must execute Unanimous Written Consents for Shareholders and Directors (Officers: Girish Dinakaran, James Munch), then store both in the Corporate Minute Book.'
+    },
+    {
+      id:'regagent', num:24, quarter:'ROLL', scope:'Delaware', short:'Registered Agent',
+      title:'Registered Agent Annual Renewal',
+      dueType:'rolling', dueText:'Annually, on the service provider’s contract anniversary date.',
+      entity:'Bookr, Inc. (DE)',
+      portal:{name:'EntityCompli / Vcorp Portal', url:'https://www.entitycompli.com/'},
+      info:'Confirmed — Bookr’s public SOS record lists Vcorp Agent Services, Inc. as registered agent. Non-payment causes the agent to resign.'
+    },
+    {
+      id:'idmsosca', num:25, quarter:'ROLL', scope:'California', short:'CA SoS IDM',
+      title:'CA Secretary of State Identity Management Portal Access',
+      dueType:'rolling', dueText:'Continuous account management.',
+      entity:'All Entities',
+      portal:{name:'idm.sos.ca.gov', url:'https://idm.sos.ca.gov/signin/register'},
+      info:'Master CA SoS Identity Management credential system registration. Used to manage state-level organizational filing identities across all operational corporate structures.'
+    },
+    {
+      id:'everify', num:26, quarter:'ROLL', scope:'Federal', short:'E-Verify USCIS',
+      title:'E-Verify USCIS New Hire Verification Enrollment Protocol',
+      dueType:'rolling', dueText:'Mandated for compliance upon onboarding new individuals.',
+      entity:'Bookr, Inc.',
+      portal:{name:'idp.uscis.gov', url:'https://secure.login.gov/'},
+      info:'Workforce alignment tracking infrastructure configuration. Action Item Required: Girish to Register / Enroll inside Login.gov engine workspace to finish overall backend programmatic verification sync.'
+    },
+    {
+      id:'eftpsgov', num:27, quarter:'ROLL', scope:'Federal', short:'EFTPS Portal',
+      title:'Federal Tax Portal Access and PIN Security Profile',
+      dueType:'rolling', dueText:'Continuous account management.',
+      entity:'Bookr, Inc.',
+      portal:{name:'www.eftps.gov', url:'https://secure.login.gov/'},
+      info:'IRS Federal Tax Payment Portal engine setup. Access metrics verification required. Action Item Required: Girish to complete official profile setup.'
+    },
+    {
+      id:'coterie', num:28, quarter:'ROLL', scope:'Insurance', short:'Coterie Insurance',
+      title:'Coterie Insurance Renewal (Professional Liability)',
+      dueType:'rolling', dueText:'Annually — monitor operational window boundaries.',
+      entity:'Bookr, Inc.',
+      portal:{name:'Coterie Policy Workspace', url:'https://mypolicycenter.coterieinsurance.com/signin'},
+      info:'Corporate commercial liability platform configuration, protecting professional code structures and client consultation assets.'
+    },
+    {
+      id:'sterling', num:29, quarter:'ROLL', scope:'Federal', short:'Sterling HSA POP',
+      title:'Sterling HSA Premium Only Plan Corporate Compliance Check',
+      dueType:'rolling', dueText:'Continuous operational window monitoring status.',
+      entity:'Bookr, Inc.',
+      portal:{name:'Sterling HSA Engine', url:'https://www.sterlinghsa.com/Accounts/Login/'},
+      info:'Premium Only Plan alignment checks mandated under IRS section code variables. Secured through Madeline King at Engers Benefit Group.'
+    },
+    {
+      id:'anthem', num:30, quarter:'ROLL', scope:'Insurance', short:'Anthem Portal',
+      title:'Anthem Employer Health Insurance Premium Portal Management',
+      dueType:'rolling', dueText:'Monthly accounting pipeline reconciliations.',
+      entity:'Bookr, Inc.',
+      portal:{name:'Anthem Employer Center', url:'https://employer.anthem.com/eea/public/login'},
+      info:'Core operational workspace hub for tracking state group health enrollment variables and employee eligibility metrics.'
+    },
+    {
+      id:'hartford', num:31, quarter:'ROLL', scope:'Insurance', short:'Hartford Business',
+      title:'Hartford Insurance Policy Renewal (General Liability / Property)',
+      dueType:'rolling', dueText:'Annually — inspect coverage boundaries.',
+      entity:'Bookr, Inc.',
+      portal:{name:'The Hartford Account Center', url:'https://account.thehartford.com/customer/login'},
+      info:'Primary operational business liability and physical property infrastructure safety matrix handling.'
+    },
+    {
+      id:'travelers', num:32, quarter:'ROLL', scope:'Insurance', short:'Travelers Workers Comp',
+      title:'Travelers Worker’s Compensation Insurance Compliance Policy',
+      dueType:'rolling', dueText:'Annually — monitor state insurance payroll audits.',
+      entity:'Bookr, Inc.',
+      portal:{name:'Travelers Portal Engine', url:'https://signin.travelers.com/'},
+      info:'Statutory payroll worker safety policy mandated by the State of California matching team expansion records.'
+    }
+  ];
+
+  let TASKS = [];
+  let STATE_LOGS = [];
+
+  let state = {
+    currentView: 'list', 
+    currentYear: 2026,
+    currentMonth: 6,
+    selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'],
+    selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'],
+    searchQuery: '',
+    quickFilter: 'all'
+  };
+
+  function calculateTargetDate(year, month, day) {
+    let targetDate = new Date(year, month - 1, day);
+    if (targetDate.getDay() === 6) {
+      targetDate.setDate(targetDate.getDate() + 2);
+    } else if (targetDate.getDay() === 0) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+    return targetDate;
+  }
+
+  function init() {
+    loadDatabase();
+    buildYearDropdownSelectors();
+    
+    document.getElementById('prevMonth').addEventListener('click', () => adjustMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => adjustMonth(1));
+    document.getElementById('todayBtn').addEventListener('click', setToCurrentCycle);
+    
+    document.getElementById('yearSelect').addEventListener('change', (e) => {
+      state.currentYear = parseInt(e.target.value);
+      render();
+    });
+
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+      state.searchQuery = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    document.getElementById('quickFilterSelect').addEventListener('change', (e) => {
+      state.quickFilter = e.target.value;
+      render();
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
+    document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
+    document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
+
+    setupViewToggles();
+    render();
+  }
+
+  function loadDatabase() {
+    const deletedCore = JSON.parse(localStorage.getItem('bookr_deleted_core') || '[]');
+    let baseTasks = CORE_TASKS.filter(t => !deletedCore.includes(t.id));
+    
+    const customTasks = localStorage.getItem('bookr_custom_tasks');
+    if (customTasks) {
+      try { TASKS = [...baseTasks, ...JSON.parse(customTasks)]; } catch(e) { TASKS = [...baseTasks]; }
+    } else {
+      TASKS = [...baseTasks];
+    }
+
+    const savedLogs = localStorage.getItem('bookr_compliance_logs');
+    if (savedLogs) {
+      try { STATE_LOGS = JSON.parse(savedLogs); } catch(e) { STATE_LOGS = []; }
+    }
+  }
+
+  function buildYearDropdownSelectors() {
+    const select = document.getElementById('yearSelect');
+    select.innerHTML = '';
+    for(let y = 2024; y <= 2035; y++) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = `${y} Fiscal Year`;
+      if(y === state.currentYear) opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+
+  function setupViewToggles() {
+    const container = document.querySelector('.view-toggle');
+    container.innerHTML = '';
+    
+    const views = [
+      { id: 'list', label: 'List View' },
+      { id: 'calendar', label: 'Calendar' },
+      { id: 'archive', label: 'History Archive' }
+    ];
+    
+    views.forEach(v => {
+      const b = document.createElement('button');
+      b.textContent = v.label;
+      if (state.currentView === v.id) b.classList.add('active');
+      b.addEventListener('click', () => {
+        state.currentView = v.id;
+        document.querySelectorAll('.view-toggle button').forEach(btn => btn.classList.remove('active'));
+        b.classList.add('active');
+        render();
+      });
+      container.appendChild(b);
+    });
+  }
+
+  function setToCurrentCycle() {
+    const today = new Date();
+    state.currentYear = today.getFullYear();
+    state.currentMonth = today.getMonth();
+    document.getElementById('yearSelect').value = state.currentYear;
+    render();
+  }
+
+  function adjustMonth(offset) {
+    state.currentMonth += offset;
+    if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
+    else if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
+    document.getElementById('yearSelect').value = state.currentYear;
+    render();
+  }
+
+  function getTaskStatus(task) {
+    const logs = STATE_LOGS.filter(l => l.taskId === task.id && parseInt(l.fiscalYear || 2026) === state.currentYear);
+    if (logs.length > 0 && logs.some(l => l.action === 'filed')) return 'filed';
+    if (task.dueType === 'rolling') return 'needsdate';
+
+    const todayObj = new Date(2026, 6, 13);
+    
+    let due;
+    if (task.dueType === 'fixed') {
+      due = calculateTargetDate(state.currentYear, task.dueMonth, task.dueDay);
+    } else {
+      due = new Date(state.currentYear, task.dueMonth - 1, task.dueDay);
+    }
+    
+    if (due < todayObj) return 'overdue';
+    
+    const diffDays = Math.ceil((due - todayObj) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 7) return 'soon';
+    if (diffDays <= 14) return 'soon';
+    if (diffDays <= 30) return 'month';
+    return 'upcoming';
+  }
+
+  function getStatusLabel(status) {
+    switch(status) {
+      case 'overdue': return 'OVERDUE';
+      case 'soon': return 'ACTION IMMINENT (< 14D)';
+      case 'month': return 'DUE < 30 DAYS';
+      case 'filed': return 'FILED';
+      case 'upcoming': return 'FUTURE PIPELINE';
+      case 'needsdate': return 'UNSCHEDULED';
+    }
+    return '';
+  }
+
+  function getIconForStatus(status) {
+    const colors = { overdue: 'var(--overdue)', soon: 'var(--soon)', month: 'var(--month)', filed: 'var(--filed)', upcoming: 'var(--upcoming)', needsdate: 'var(--needsdate)' };
+    const color = colors[status] || 'var(--ink-faint)';
+    
+    if(status === 'filed') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M7 12l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    } else if(status === 'overdue' || status === 'soon') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    } else if(status === 'upcoming' || status === 'month') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v5l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    } else {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M9 9a3 3 0 115.2 2.2c-.8.9-1.2 2-1.2 3.2v.6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    }
+  }
+
+  function getFilteredTasks() {
+    return TASKS.filter(t => {
+      if (!state.selectedScopes.includes(t.scope)) return false;
+      const status = getTaskStatus(t);
+      if (!state.selectedStatuses.includes(status)) return false;
+
+      const todayObj = new Date(2026, 6, 13);
+      let diffDays = Infinity;
+      if (t.dueType === 'fixed') {
+        const due = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
+        diffDays = Math.ceil((due - todayObj) / (1000 * 60 * 60 * 24));
+      }
+
+      if (state.quickFilter === 'fed' && t.scope !== 'Federal') return false;
+      if (state.quickFilter === 'ca' && t.scope !== 'California') return false;
+      if (state.quickFilter === 'de' && t.scope !== 'Delaware') return false;
+      if (state.quickFilter === 'intl' && t.scope !== 'Internal') return false;
+      if (state.quickFilter === 'ins' && t.scope !== 'Insurance') return false;
+      
+      if (state.quickFilter === '1w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 7 && status !== 'filed'))) return false;
+      if (state.quickFilter === '2w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 14 && status !== 'filed'))) return false;
+      if (state.quickFilter === '1m' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 30 && status !== 'filed'))) return false;
+      
+      if (state.quickFilter === 'overdue_q' && status !== 'overdue') return false;
+      if (state.quickFilter === 'filed_q' && status !== 'filed') return false;
+
+      if (state.searchQuery) {
+        const statusLabel = getStatusLabel(status).toLowerCase();
+        return t.title.toLowerCase().includes(state.searchQuery) ||
+               t.info.toLowerCase().includes(state.searchQuery) ||
+               t.scope.toLowerCase().includes(state.searchQuery) ||
+               t.short.toLowerCase().includes(state.searchQuery) ||
+               statusLabel.includes(state.searchQuery);
+      }
+      return true;
+    });
+  }
+
+  function render() {
+    renderSidebarFilters();
+    const title = document.getElementById('monthTitle');
+    const navControls = document.getElementById('calNavCluster');
+    const workspace = document.getElementById('mainContent');
+    
+    document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
+
+    if (state.currentView === 'calendar') {
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      title.textContent = `${monthNames[state.currentMonth]} ${state.currentYear} Pipeline`;
+      navControls.style.display = 'flex';
+      renderCalendarGrid(workspace);
+    } else if (state.currentView === 'list') {
+      title.textContent = `Master Corporate Ledger Workspace (${state.currentYear})`;
+      navControls.style.display = 'flex';
+      renderMasterLedgerView(workspace);
+    } else if (state.currentView === 'archive') {
+      title.textContent = `Global Corporate Audit Logs`;
+      navControls.style.display = 'none';
+      renderArchiveView(workspace);
+    }
+  }
+
+  function renderSidebarFilters() {
+    const statsContainer = document.getElementById('statsList');
+    statsContainer.innerHTML = '';
+    ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'].forEach(st => {
+      const count = TASKS.filter(t => getTaskStatus(t) === st).length;
+      const active = state.selectedStatuses.includes(st);
+      const row = document.createElement('div');
+      row.className = `stat-line scope-line ${st} ${active ? '' : 'off'}`;
+      row.innerHTML = `<span class="swatch" style="background:var(--${st})"></span><span>${getStatusLabel(st)}</span><span class="cnt n">${count}</span>`;
+      row.addEventListener('click', () => {
+        state.selectedStatuses = active ? state.selectedStatuses.filter(x => x !== st) : [...state.selectedStatuses, st];
+        render();
+      });
+      statsContainer.appendChild(row);
+    });
+
+    const scopeContainer = document.getElementById('scopeList');
+    scopeContainer.innerHTML = '';
+    const scopeThemeMap = { 'Federal':'fed', 'California':'ca', 'Delaware':'de', 'Internal':'intl', 'Insurance':'ins' };
+    ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'].forEach(sc => {
+      const count = TASKS.filter(t => t.scope === sc).length;
+      const active = state.selectedScopes.includes(sc);
+      const row = document.createElement('div');
+      row.className = `scope-line ${active ? '' : 'off'}`;
+      row.innerHTML = `<span class="swatch" style="background:var(--${scopeThemeMap[sc]})"></span><span>${sc}</span><span class="cnt">${count}</span>`;
+      row.addEventListener('click', () => {
+        state.selectedScopes = active ? state.selectedScopes.filter(x => x !== sc) : [...state.selectedScopes, sc];
+        render();
+      });
+      scopeContainer.appendChild(row);
+    });
+
+    const unschedContainer = document.getElementById('unschedList');
+    unschedContainer.innerHTML = '';
+    const unschedTasks = getFilteredTasks().filter(t => getTaskStatus(t) === 'needsdate');
+    if (unschedTasks.length === 0) {
+      unschedContainer.innerHTML = '<div class="unsched-empty">No active floating milestones.</div>';
+    } else {
+      unschedTasks.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'unsched-item';
+        div.textContent = t.short;
+        div.addEventListener('click', () => openTaskModalInline(t.id));
+        unschedContainer.appendChild(div);
+      });
+    }
+  }
+
+  function renderMasterLedgerView(container) {
+    container.innerHTML = '';
+    const filtered = getFilteredTasks();
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">No corporate compliance tasks found matching selected criteria.</div>';
+      return;
+    }
+
+    const masterWrapper = document.createElement('div');
+    masterWrapper.className = 'master-ledger-container';
+
+    const sections = [
+      { id: 'Q1', label: 'Quarter 1 (Q1) Framework Objectives', filter: t => t.quarter === 'Q1' },
+      { id: 'Q2', label: 'Quarter 2 (Q2) Framework Objectives', filter: t => t.quarter === 'Q2' },
+      { id: 'Q3', label: 'Quarter 3 (Q3) Framework Objectives', filter: t => t.quarter === 'Q3' },
+      { id: 'Q4', label: 'Quarter 4 (Q4) Framework Objectives', filter: t => t.quarter === 'Q4' },
+      { id: 'ROLL', label: 'Rolling Operational & Anniversary Cycles', filter: t => t.quarter === 'ROLL' && t.scope !== 'Insurance' },
+      { id: 'INS', label: 'Corporate Insurance Policies', filter: t => t.scope === 'Insurance' }
+    ];
+
+    sections.forEach(sec => {
+      const laneTasks = filtered.filter(sec.filter);
+      if (laneTasks.length === 0) return;
+
+      const laneDiv = document.createElement('div');
+      laneDiv.className = 'quarter-section-lane';
+      laneDiv.innerHTML = `
+        <div class="quarter-lane-title">
+          <span>${sec.label}</span>
+          <span class="count">${laneTasks.length} Tracked Form${laneTasks.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="lane-content-cards" id="lane-cards-${sec.id}"></div>
+      `;
+
+      const cardsContainer = laneDiv.querySelector(`#lane-cards-${sec.id}`);
+      
+      if (sec.id === 'ROLL' || sec.id === 'INS') {
+        laneTasks.forEach(t => cardsContainer.appendChild(renderTaskCard(t)));
+      } else {
+        const sortedTasks = [...laneTasks].sort((a,b) => (a.dueMonth * 100 + a.dueDay) - (b.dueMonth * 100 + b.dueDay));
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        let currentMonth = -1;
+        sortedTasks.forEach(t => {
+          if (t.dueMonth !== currentMonth) {
+            currentMonth = t.dueMonth;
+            const monthHeader = document.createElement('div');
+            monthHeader.className = 'list-month-header';
+            monthHeader.textContent = `${monthNames[currentMonth - 1]} Deadlines`;
+            cardsContainer.appendChild(monthHeader);
+          }
+          cardsContainer.appendChild(renderTaskCard(t));
+        });
+      }
+
+      masterWrapper.appendChild(laneDiv);
+    });
+
+    container.appendChild(masterWrapper);
+  }
+
+  function renderCalendarGrid(container) {
+    container.innerHTML = '';
+    const weekdaysDiv = document.createElement('div');
+    weekdaysDiv.className = 'weekdays';
+    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].forEach(w => {
+      const d = document.createElement('div'); d.textContent = w; weekdaysDiv.appendChild(d);
+    });
+    container.appendChild(weekdaysDiv);
+
+    const gridDiv = document.createElement('div');
+    gridDiv.className = 'cal-grid';
+
+    const firstDayIndex = new Date(state.currentYear, state.currentMonth, 1).getDay();
+    const totalDays = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+    const prevTotalDays = new Date(state.currentYear, state.currentMonth, 0).getDate();
+
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell outside';
+      cell.innerHTML = `<div class="daynum">${prevTotalDays - i}</div>`;
+      gridDiv.appendChild(cell);
+    }
+
+    const currentTasks = getFilteredTasks().filter(t => t.dueType === 'fixed' && t.dueMonth === (state.currentMonth + 1));
+    const todayObj = new Date(2026, 6, 13);
+
+    for (let day = 1; day <= totalDays; day++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      if (day === todayObj.getDate() && state.currentMonth === todayObj.getMonth() && state.currentYear === todayObj.getFullYear()) {
+        cell.classList.add('today');
+      }
+
+      let inner = `<div class="daynum">${day}</div>`;
+      
+      currentTasks.forEach(t => {
+        const calculatedDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
+        if (calculatedDate.getDate() === day && calculatedDate.getMonth() === state.currentMonth) {
+            inner += `<div class="chip ${getTaskStatus(t)}" data-task-id="${t.id}">${t.short}</div>`;
+        }
+      });
+
+      cell.innerHTML = inner;
+      cell.addEventListener('click', () => openDayModalView(day));
+      gridDiv.appendChild(cell);
+    }
+
+    const remaining = (firstDayIndex + totalDays) % 7 === 0 ? 0 : 7 - ((firstDayIndex + totalDays) % 7);
+    for (let nextDay = 1; nextDay <= remaining; nextDay++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell outside';
+      cell.innerHTML = `<div class="daynum">${nextDay}</div>`;
+      gridDiv.appendChild(cell);
+    }
+    container.appendChild(gridDiv);
+  }
+
+  function clearAllGlobalLogs() {
+    if (confirm("Are you sure you want to completely wipe the global audit registry? This action cannot be undone.")) {
+      STATE_LOGS = [];
+      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+      render();
+    }
+  }
+
+  function renderArchiveView(container) {
+    container.innerHTML = '';
+    if (STATE_LOGS.length === 0) {
+      container.innerHTML = '<div class="empty-state">Global audit registry is currently blank. Execute and log entries within form components to populate archives.</div>';
+      return;
+    }
+
+    const headerControls = document.createElement('div');
+    headerControls.style.display = 'flex';
+    headerControls.style.justifyContent = 'flex-end';
+    headerControls.style.marginBottom = '16px';
+    headerControls.innerHTML = `<button class="btn btn-delete" style="padding: 6px 12px; font-size: 13px;" onclick="clearAllGlobalLogs()">Clear All Audit Logs</button>`;
+    container.appendChild(headerControls);
+
+    const stackContainer = document.createElement('div');
+    stackContainer.className = 'history-archive-stack';
+
+    [...STATE_LOGS].reverse().forEach(l => {
+      const parentTask = TASKS.find(t => t.id === l.taskId) || { short: 'Deleted Module', title: l.taskId };
+      const dlButton = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'compliance_doc'}" class="dl-link">Local File</a>` : '';
+      const cloudButton = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud Link</a>` : '';
+      
+      const card = document.createElement('div');
+      card.className = 'history-archive-card';
+      card.innerHTML = `
+        <div class="timestamp">${l.timestamp}</div>
+        <div class="details">
+          <h4>${parentTask.short} — <span class="status-label ${l.action}">${l.action.toUpperCase()}</span></h4>
+          <p>${parentTask.title}</p>
+          <div class="note">Executed Date: <strong>${l.date}</strong> ${l.note ? `| Ref: <em>${l.note}</em>` : ''}</div>
+        </div>
+        <div class="cycle">Cycle ${l.fiscalYear || '2026'}</div>
+        <div class="actions">
+          ${cloudButton}
+          ${dlButton}
+          <span class="del-btn-icon" onclick="deleteHistoryEntryGlobal('${l.id}')">&times;</span>
+        </div>
+      `;
+      stackContainer.appendChild(card);
+    });
+
+    container.appendChild(stackContainer);
+  }
+
+  function deleteTask(taskId) {
+    if(confirm("Are you sure you want to permanently delete this task?")) {
+      let customTasks = JSON.parse(localStorage.getItem('bookr_custom_tasks') || '[]');
+      customTasks = customTasks.filter(t => t.id !== taskId);
+      localStorage.setItem('bookr_custom_tasks', JSON.stringify(customTasks));
+
+      let deletedCore = JSON.parse(localStorage.getItem('bookr_deleted_core') || '[]');
+      if(!deletedCore.includes(taskId)) {
+        deletedCore.push(taskId);
+        localStorage.setItem('bookr_deleted_core', JSON.stringify(deletedCore));
+      }
+      
+      STATE_LOGS = STATE_LOGS.filter(l => l.taskId !== taskId);
+      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+
+      loadDatabase();
+      render();
+    }
+  }
+
+  function renderTaskCard(t) {
+    const div = document.createElement('div');
+    div.className = 'task-card';
+    div.id = `card-${t.id}`;
+    
+    const status = getTaskStatus(t);
+    
+    let displayDateText = t.dueText; 
+    if (t.dueType === 'fixed') {
+      const exactDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
+      displayDateText = exactDate.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    } else if (t.dueType === 'rolling') {
+      displayDateText = `${t.dueText} (Target: FY ${state.currentYear})`;
+    }
+
+    const scopeClassMap = { 'Federal':'scope-fed', 'California':'scope-ca', 'Delaware':'scope-de', 'Internal':'scope-intl', 'Insurance':'scope-ins' };
+    const portalContent = t.portal ? `<a href="${t.portal.url}" target="_blank" class="btn mini primary">Access ${t.portal.name}</a>` : `<span class="no-portal-note" style="font-size:12px; color:var(--ink-faint);">Internal Record Profile</span>`;
+    const altActionHtml = t.altNote ? `<span style="font-size:12px; color:var(--ink-dim)">or ${t.altNote}</span>` : '';
+
+    div.innerHTML = `
+      <div class="num-col">${t.num || '#'}</div>
+      <div class="body-col">
+        <div class="task-top">
+          <div>
+            <h3>${t.title}</h3>
+            <div style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); margin-top:2px;">Entity assignment: ${t.entity}</div>
+          </div>
+          <div class="status-block">
+            <span class="badge ${t.quarter}">${t.quarter}</span>
+            <button class="btn-delete" onclick="deleteTask('${t.id}')">Delete</button>
+            <div style="display:flex; align-items:center; gap:4px;">
+              ${getIconForStatus(status)}
+              <span class="status-label ${status}">${getStatusLabel(status)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="pill ${scopeClassMap[t.scope] || 'scope-intl'}">${t.scope}</span>
+          <span class="due-text"><span class="cap">Target Cycle Deadline:</span> <strong>${displayDateText}</strong></span>
+        </div>
+
+        <div class="info-text" style="font-size:13px; color:var(--ink-dim); margin-bottom:14px;">${t.info}</div>
+
+        <div class="action-row">
+          ${portalContent}
+          ${altActionHtml}
+          <button class="btn mini ghost" onclick="toggleFormInline('${t.id}')">Log Execution Status</button>
+          <button class="btn mini ghost" onclick="toggleHistoryPanelInline('${t.id}')">Form File Archive</button>
+        </div>
+
+        <div class="inline-form" id="form-${t.id}">
+          <div class="form-row">
+            <div class="field">
+              <label>Status Action</label>
+              <select id="act-${t.id}">
+                <option value="filed">Mark Executed / Done</option>
+                <option value="clear_all">Wipe Entire History Log</option>
+                <option value="reset">Reset Current Year to Pending</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Fiscal Cycle</label>
+              <input type="number" id="fyear-${t.id}" value="${state.currentYear}" style="width:90px;">
+            </div>
+            <div class="field">
+              <label>Date Executed</label>
+              <input type="date" id="date-${t.id}" value="2026-07-13">
+            </div>
+            <div class="field">
+              <label>Cloud Link (Google Drive / OneDrive)</label>
+              <input type="url" id="link-${t.id}" placeholder="https://drive.google.com/..." style="width:200px;">
+            </div>
+            <div class="field">
+              <label>Upload Document Proof</label>
+              <input type="file" id="file-${t.id}" style="width:180px; font-size:11px;">
+            </div>
+            <div class="field" style="width: 100%;">
+              <label>Confirmation Note</label>
+              <input type="text" id="note-${t.id}" placeholder="Add confirmation numbers, state IDs, or extra notes here..." style="width:100%;">
+            </div>
+            <div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 8px;">
+               <button class="btn mini primary" onclick="submitExecutionFormInline('${t.id}')">Commit Action</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-panel" id="hist-${t.id}">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Action Value</th>
+                <th>Fiscal Cycle</th>
+                <th>Target Execution Date</th>
+                <th>Cloud Link</th>
+                <th>File Proof</th>
+                <th style="width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody id="hist-table-${t.id}"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+
+  function toggleFormInline(id) { document.getElementById(`form-${id}`).classList.toggle('open'); }
+
+  function toggleHistoryPanelInline(id) {
+    const p = document.getElementById(`hist-${id}`);
+    p.classList.toggle('open');
+    if (p.classList.contains('open')) rebuildHistoryTableInline(id);
+  }
+
+  function rebuildHistoryTableInline(id) {
+    const tbody = document.getElementById(`hist-table-${id}`);
+    tbody.innerHTML = '';
+    const logs = STATE_LOGS.filter(l => l.taskId === id);
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="history-empty">No logged filing assets exist inside this form workspace layer.</td></tr>`;
+      return;
+    }
+    logs.forEach(l => {
+      const tr = document.createElement('tr');
+      const dlLink = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'proof'}" class="dl-link">File</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
+      const cloudLink = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
+      
+      tr.innerHTML = `
+        <td>${l.timestamp}</td>
+        <td><span class="status-label ${l.action}">${l.action.toUpperCase()}</span></td>
+        <td>Cycle ${l.fiscalYear}</td>
+        <td>${l.date}</td>
+        <td>${cloudLink}</td>
+        <td>${dlLink}</td>
+        <td class="del-x" onclick="deleteHistoryEntryGlobal('${l.id}')">&times;</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function submitExecutionFormInline(id) {
+    const actionValue = document.getElementById(`act-${id}`).value;
+    const fiscalYearVal = document.getElementById(`fyear-${id}`).value;
+    const dateValue = document.getElementById(`date-${id}`).value;
+    const cloudLinkValue = document.getElementById(`link-${id}`).value;
+    const noteValue = document.getElementById(`note-${id}`).value;
+    const fileInput = document.getElementById(`file-${id}`);
+
+    if (actionValue === 'clear_all') {
+      if (confirm("Are you sure you want to completely wipe all logged submission histories for this specific milestone?")) {
+        STATE_LOGS = STATE_LOGS.filter(l => l.taskId !== id);
+        localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+        document.getElementById(`form-${id}`).classList.remove('open');
+        render();
+        return;
+      } else { return; }
+    } else if (actionValue === 'reset') {
+      STATE_LOGS = STATE_LOGS.filter(l => !(l.taskId === id && parseInt(l.fiscalYear) === parseInt(fiscalYearVal)));
+      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+      document.getElementById(`form-${id}`).classList.remove('open');
+      render();
+      return;
+    }
+
+    const saveLogData = (fileBase64 = null, fileName = null) => {
+      STATE_LOGS.push({
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        taskId: id,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: actionValue,
+        fiscalYear: parseInt(fiscalYearVal),
+        date: dateValue,
+        cloudLink: cloudLinkValue,
+        note: noteValue,
+        fileData: fileBase64,
+        fileName: fileName
+      });
+      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+      document.getElementById(`form-${id}`).classList.remove('open');
+      render();
+      const hist = document.getElementById(`hist-${id}`);
+      if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(id);
+    };
+
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const targetFile = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        saveLogData(e.target.result, targetFile.name);
+      };
+      reader.readAsDataURL(targetFile);
+    } else {
+      saveLogData();
+    }
+  }
+
+  function deleteHistoryEntryGlobal(logId) {
+    let taskId = null;
+    const logItem = STATE_LOGS.find(l => l.id === logId);
+    if (logItem) taskId = logItem.taskId;
+
+    STATE_LOGS = STATE_LOGS.filter(l => l.id !== logId);
+    localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+    
+    render();
+    if (taskId) {
+      const hist = document.getElementById(`hist-${taskId}`);
+      if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(taskId);
+    }
+    if (state.currentView === 'archive') renderArchiveView(document.getElementById('mainContent'));
+    if (document.getElementById('modalOverlay').classList.contains('open') && activeModalDay !== null) rebuildModalActiveDayMarkup();
+  }
+
+  function generateStatusReport() {
+    const currentTasks = getFilteredTasks();
+    const filed = currentTasks.filter(t => getTaskStatus(t) === 'filed');
+    const overdue = currentTasks.filter(t => getTaskStatus(t) === 'overdue');
+    const soon = currentTasks.filter(t => getTaskStatus(t) === 'soon');
+    const month = currentTasks.filter(t => getTaskStatus(t) === 'month');
+
+    let html = `
+      <div style="font-size: 15px; margin-bottom: 24px; color: var(--ink-dim);">
+        Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.
+      </div>
+      
+      <div class="task-form-three-col" style="margin-bottom: 32px;">
+        <div class="report-stat-box">
+          <h4>Executed Forms</h4>
+          <h2 style="color: var(--filed)">${filed.length}</h2>
+        </div>
+        <div class="report-stat-box" style="border-color: var(--soon);">
+          <h4 style="color: var(--soon)">Action Imminent</h4>
+          <h2 style="color: var(--soon)">${soon.length}</h2>
+        </div>
+        <div class="report-stat-box" style="border-color: var(--overdue); background: #fef2f2;">
+          <h4 style="color: var(--overdue)">Critical Overdue</h4>
+          <h2 style="color: var(--overdue)">${overdue.length}</h2>
+        </div>
+      </div>
+    `;
+
+    if(overdue.length > 0 || soon.length > 0 || month.length > 0) {
+      html += `<div class="quarter-lane-title"><span>Priority Pipeline Items</span></div><div style="display:flex; flex-direction:column; gap:12px;">`;
+      
+      [...overdue, ...soon, ...month].forEach(t => {
+        const s = getTaskStatus(t);
+        html += `
+          <div class="task-card" style="margin-bottom: 0;">
+             <div class="body-col" style="padding: 12px 16px;">
+               <div class="task-top" style="margin-bottom: 0;">
+                 <h3 style="font-size: 14px;">${t.short}: ${t.title}</h3>
+                 <span class="status-label ${s}">${getStatusLabel(s)}</span>
+               </div>
+             </div>
+          </div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="empty-state" style="padding: 24px;">All clear! No impending deadlines or overdue frameworks for this cycle.</div>`;
+    }
+
+    document.getElementById('modalTitle').textContent = `Bookr Compliance Status Report`;
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function openAddMilestoneWizard() {
+    document.getElementById('modalTitle').textContent = 'Create Custom Corporate Framework Milestone';
+    const body = document.getElementById('modalBody');
+    body.innerHTML = `
+      <div style="background: var(--surface); padding: 4px 0;">
+        <div class="task-form-grid">
+          <div class="field"><label>Milestone Short Token (e.g. Form SI-550)</label><input type="text" id="newShort" placeholder="e.g. Form SI-550" required></div>
+          <div class="field"><label>Full Statutory Title</label><input type="text" id="newTitle" placeholder="e.g. Statement of Information" required></div>
+          
+          <div class="full-width task-form-three-col">
+            <div class="field">
+              <label>Jurisdiction Scope</label>
+              <select id="newScope">
+                <option value="Federal">Federal</option>
+                <option value="California">California</option>
+                <option value="Delaware">Delaware</option>
+                <option value="Internal">Internal</option>
+                <option value="Insurance">Insurance</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Target Operational Quarter</label>
+              <select id="newQuarter"><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option><option value="ROLL">ROLL</option><option value="INSURANCE">Insurance Policy</option></select>
+            </div>
+            <div class="field">
+              <label>Filing Paradigm Type</label>
+              <select id="newDueType" onchange="document.getElementById('fixedDateConfig').style.display = (this.value==='fixed'?'grid':'none')">
+                <option value="fixed">Fixed Structural Date</option><option value="rolling">Floating Rolling Requirement</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="fixedDateConfig" class="full-width task-form-grid" style="grid-template-columns: 1fr 1fr; margin: 0; padding: 0;">
+            <div class="field">
+              <label>Due Month</label>
+              <select id="newDueMonth">
+                <option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
+              </select>
+            </div>
+            <div class="field"><label>Due Day Calendar Numeric</label><input type="number" id="newDueDay" min="1" max="31" value="15"></div>
+          </div>
+
+          <div class="full-width field"><label>Target Fiscal Year Creation</label><input type="number" id="newTargetYear" value="${state.currentYear}"></div>
+          
+          <div class="full-width field"><label>Corporate Entity Target Assignment</label><input type="text" id="newEntity" value="Bookr, Inc."></div>
+          
+          <div class="field"><label>Portal Identity Name</label><input type="text" id="newPortalName" placeholder="e.g. CA SoS bizfile"></div>
+          <div class="field"><label>Portal Endpoint URL</label><input type="url" id="newPortalUrl" placeholder="https://..."></div>
+          
+          <div class="full-width field"><label>Scope Operational Instructions</label><textarea id="newInfo" rows="3" placeholder="Input legal data directives..."></textarea></div>
+          
+          <div class="full-width" style="display:flex; justify-content:flex-end; gap:12px; margin-top:12px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <button class="btn" type="button" onclick="closeModalWindow()">Cancel Process</button>
+            <button class="btn primary" type="button" onclick="commitCustomMilestoneObject()">Save Framework Milestone</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function commitCustomMilestoneObject() {
+    const sToken = document.getElementById('newShort').value.trim();
+    const titleText = document.getElementById('newTitle').value.trim();
+    if (!sToken || !titleText) { alert('Please compile required text parameters.'); return; }
+
+    const type = document.getElementById('newDueType').value;
+    const m = parseInt(document.getElementById('newDueMonth').value);
+    const d = parseInt(document.getElementById('newDueDay').value);
+    const targetYr = parseInt(document.getElementById('newTargetYear').value);
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    const customObj = {
+      id: 'cust_' + Date.now(),
+      num: TASKS.length + 1,
+      quarter: document.getElementById('newQuarter').value,
+      scope: document.getElementById('newScope').value,
+      short: sToken,
+      title: titleText,
+      dueType: type,
+      dueMonth: m,
+      dueDay: d,
+      dueText: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone',
+      entity: document.getElementById('newEntity').value.trim() || 'Bookr, Inc.',
+      portal: document.getElementById('newPortalName').value.trim() ? { name: document.getElementById('newPortalName').value.trim(), url: document.getElementById('newPortalUrl').value.trim() || '#' } : null,
+      info: document.getElementById('newInfo').value.trim() || 'Custom parameters.'
+    };
+
+    let currentCustomList = JSON.parse(localStorage.getItem('bookr_custom_tasks') || '[]');
+    currentCustomList.push(customObj);
+    localStorage.setItem('bookr_custom_tasks', JSON.stringify(currentCustomList));
+
+    loadDatabase();
+    
+    if (targetYr !== state.currentYear) {
+      state.currentYear = targetYr;
+      document.getElementById('yearSelect').value = targetYr;
+    }
+    
+    closeModalWindow();
+    render();
+  }
+
+  let activeModalDay = null;
+  function openDayModalView(day) {
+    activeModalDay = day;
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    document.getElementById('modalTitle').textContent = `Target Portfolio: ${monthNames[state.currentMonth]} ${day}, ${state.currentYear}`;
+    rebuildModalActiveDayMarkup();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function openTaskModalInline(taskId) {
+    activeModalDay = null;
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task) return;
+    document.getElementById('modalTitle').textContent = `Record: ${task.short}`;
+    const body = document.getElementById('modalBody');
+    body.innerHTML = '';
+    body.appendChild(renderTaskCard(task));
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function rebuildModalActiveDayMarkup() {
+    const matches = getFilteredTasks().filter(t => t.dueType === 'fixed' && t.dueMonth === (state.currentMonth + 1));
+    const dayMatches = matches.filter(t => calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay).getDate() === activeModalDay);
+    
+    const body = document.getElementById('modalBody');
+    if (body) {
+      body.innerHTML = dayMatches.length === 0 ? `<div class="modal-empty">No standard filing items registered on this calendar index block.</div>` : '';
+      dayMatches.forEach(t => body.appendChild(renderTaskCard(t)));
+    }
+  }
+
+  function closeModalWindow() { document.getElementById('modalOverlay').classList.remove('open'); activeModalDay = null; }
+
+  function exportToCsvArchive() {
+    let csvContent = "data:text/csv;charset=utf-8,ID,Number,Quarter,Scope,Title,Status,Target Deadline\n";
+    TASKS.forEach(t => {
+      csvContent += `${t.id},${t.num || '#'},${t.quarter},"${t.scope}","${t.title.replace(/"/g, '""')}",${getStatusLabel(getTaskStatus(t))},"${t.dueText}"\n`;
+    });
+    const dl = document.createElement("a");
+    dl.setAttribute("href", encodeURI(csvContent));
+    dl.setAttribute("download", "bookr_compliance_master_ledger.csv");
+    document.body.appendChild(dl); dl.click(); document.body.removeChild(dl);
+  }
+
+  window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
