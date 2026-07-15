@@ -6,6 +6,7 @@ from typing import Optional
 class TaskBase(BaseModel):
     title: str = Field(..., example="California Statement of Information")
     status: str = Field(..., example="Pending")
+    description: str = Field(..., example="Details about the filing...")
     due_date: Optional[datetime] = None
 
 class TaskCreate(TaskBase):

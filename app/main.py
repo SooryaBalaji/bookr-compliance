@@ -4,6 +4,10 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from contextlib import asynccontextmanager
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from . import models, schemas
+from .database import get_db
 import os
 
 from app.database import engine, Base, get_db
@@ -58,3 +62,20 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail="Database connection failed")
+
+
+@app.post("/tasks/", response_model=schemas.TaskResponse)
+async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_db)):
+    # 1. Create a new database model using the data from the browser
+    new_task = models.Task(
+        title=task.title,
+        description=task.description,
+        status="Pending"  # Default status when a task is first created
+    )
+    # 2. Add it to the vault and save (commit) the changes
+    db.add(new_task)
+    await db.commit()
+    await db.refresh(new_task)
+
+    # 3. Return the newly created task back to the browser
+    return new_task

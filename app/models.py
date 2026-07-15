@@ -41,6 +41,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String)
     status = Column(String) # e.g., "Pending", "Executed"
+    description = Column(String)
     due_date = Column(DateTime)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
