@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text
-from sqlalchemy.orm import relationship, declarative_base
-from datetime import datetime
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from app.database import Base
+from datetime import datetime, timezone
 
 # Identity and Access Management
 class Role(Base):
@@ -38,17 +37,18 @@ class UserOverride(Base):
 # Core Compliance Engine
 class Task(Base):
     __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True)
-    title = Column(String)
-    status = Column(String) # e.g., "Pending", "Executed"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    status = Column(String)
     description = Column(String)
-    due_date = Column(DateTime)
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    due_date = Column(DateTime, nullable=True)
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    # Using timezone-aware UTC datetime
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     action = Column(String) # e.g., "TASK_EXECUTED", "HISTORY_WIPED"
     target_id = Column(Integer) # ID of the object changed

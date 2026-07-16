@@ -1,27 +1,21 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from contextlib import asynccontextmanager
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from . import models, schemas
-from .database import get_db
-import os
 
+# Explicitly use absolute imports
 from app.database import engine, Base, get_db
-import app.models  # We import this so SQLAlchemy knows your tables exist before creating them
+from app import models, schemas
 
-# Lifecycle Management (The Boot Sequence)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # What happens when you turn the server ON:
-    # We securely log into PostgreSQL and tell it to build your 7 tables.
+    # This now forces the creation of tables using the unified Base
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    # What happens when you turn the server OFF:
     await engine.dispose()
 
 # App Initialization
@@ -61,7 +55,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "environment": "production-ready"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Database connection failed")
+        raise HTTPException(status_code=503, detail="Database unavailable please check back later")
 
 
 @app.post("/tasks/", response_model=schemas.TaskResponse)
@@ -79,3 +73,42 @@ async def create_task(task: schemas.TaskCreate, db: AsyncSession = Depends(get_d
 
     # 3. Return the newly created task back to the browser
     return new_task
+
+@app.get("/tasks/", response_model=list[schemas.TaskResponse])
+async def read_tasks(db: AsyncSession = Depends(get_db)):
+    query = select(models.Task)
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    return tasks
+
+@app.put("/tasks/{task_id}", response_model=schemas.TaskResponse)
+async def update_task(task_id: int, task_update: schemas.TaskCreate, db: AsyncSession = Depends(get_db)):
+    query = select(models.Task).where(models.Task.id == task_id)
+    result = await db.execute(query)
+
+    db_task = result.scalar_one_or_none()
+
+    if db_task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    db_task.title = task_update.title
+    db_task.description = task_update.description
+    db_task.status = task_update.status
+
+    await db.commit()
+    await db.refresh(db_task)
+
+    return db_task
+
+@app.delete("/tasks/{task_id}")
+async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
+    query = select(models.Task).where(models.Task.id == task_id)
+    result = await db.execute(query)
+
+    db_task = result.scalar_one_or_none()
+    if db_task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db.delete(db_task)
+    await db.commit()
+
+    return {"status": "success", "message": "Task deleted"}
