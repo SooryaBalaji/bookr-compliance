@@ -234,3 +234,9 @@ db-data/
 # IDE files
 .vscode/
 .idea/
+
+node_modules/
+test-results/
+
+tests/package.json
+tests/package-lock.json
