@@ -37,6 +37,16 @@ services:
   cache:
     image: redis:7-alpine
 
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.44.0-jammy
+    volumes:
+      - ./tests:/tests
+    working_dir: /tests
+    # This command initializes a Node project, installs Playwright, and runs your script
+    command: /bin/bash -c "npm init -y && npm install @playwright/test && npx playwright test api.spec.js"
+    depends_on:
+      - web
+
 # This ensures your database doesn't wipe itself when you turn the server off
 volumes:
   db-data:
