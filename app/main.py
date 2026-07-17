@@ -150,36 +150,65 @@ class OnboardPayload(BaseModel):
 @app.post("/system/onboard")
 async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get_db),
                          admin: models.User = Depends(get_current_admin)):
+    # 1. Clear existing tasks for the fresh start
     await db.execute(text("DELETE FROM tasks"))
+
     tasks_to_seed = []
 
-    # Priority given to explicit dropdown type
+    # 2. Logic Router
     if payload.org_type == "bookr" or payload.naics_code == "541511":
         tasks_to_seed = CORE_TASKS
+
     elif payload.org_type == "non-profit":
+        # Expanded Non-Profit Framework
         tasks_to_seed = [
-            {"key": "990", "is_core": True, "deleted": False, "num": 1, "quarter": "Q2", "scope": "Federal",
-             "short": "Form 990", "title": "Return of Organization Exempt from Income Tax", "due_type": "fixed",
-             "due_month": 5, "due_day": 15, "due_text": "May 15", "entity": "Generic Org",
-             "info": "Annual IRS filing for tax-exempt organizations."},
-            {"key": "charity", "is_core": True, "deleted": False, "num": 2, "quarter": "ROLL", "scope": "State",
-             "short": "AG Reg", "title": "Attorney General Charitable Solicitation", "due_type": "rolling",
-             "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
-             "info": "Required to legally ask for donations in the state."},
+            {
+                "key": "990", "is_core": True, "deleted": False, "num": 1, "quarter": "Q2", "scope": "Federal",
+                "short": "Form 990", "title": "Return of Organization Exempt from Income Tax", "due_type": "fixed",
+                "due_month": 5, "due_day": 15, "due_text": "May 15", "entity": "Non-Profit",
+                "info": "Annual IRS informational filing for tax-exempt entities."
+            },
+            {
+                "key": "charity", "is_core": True, "deleted": False, "num": 2, "quarter": "ROLL", "scope": "State",
+                "short": "AG Reg", "title": "Charitable Solicitation Registration", "due_type": "rolling",
+                "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Non-Profit",
+                "info": "State Attorney General registration required to legally solicit donations."
+            },
+            {
+                "key": "941", "is_core": True, "deleted": False, "num": 3, "quarter": "Q1", "scope": "Federal",
+                "short": "Form 941", "title": "Employer's Quarterly Federal Tax Return", "due_type": "fixed",
+                "due_month": 4, "due_day": 30, "due_text": "Quarterly", "entity": "Non-Profit",
+                "info": "Quarterly reporting of income taxes and FICA taxes withheld from employees."
+            },
+            {
+                "key": "soi_np", "is_core": True, "deleted": False, "num": 4, "quarter": "Q4", "scope": "State",
+                "short": "Stmt Info", "title": "Annual Statement of Information", "due_type": "fixed",
+                "due_month": 12, "due_day": 31, "due_text": "Annually", "entity": "Non-Profit",
+                "info": "Periodic filing with the Secretary of State to keep entity in good standing."
+            },
+            {
+                "key": "do_ins", "is_core": True, "deleted": False, "num": 5, "quarter": "ROLL", "scope": "Insurance",
+                "short": "D&O Ins", "title": "Directors & Officers Insurance Renewal", "due_type": "rolling",
+                "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Non-Profit",
+                "info": "Renewal of D&O liability policy to protect the Board of Directors."
+            }
         ]
+
     else:
+        # Standard For-Profit Framework
         tasks_to_seed = [
             {"key": "1120", "is_core": True, "deleted": False, "num": 1, "quarter": "Q1", "scope": "Federal",
              "short": "Form 1120", "title": "U.S. Corporation Income Tax Return", "due_type": "fixed", "due_month": 4,
-             "due_day": 15, "due_text": "April 15", "entity": "Generic Org", "info": "Standard corporate tax return."},
+             "due_day": 15, "due_text": "April 15", "entity": "For-Profit", "info": "Standard corporate tax return."},
             {"key": "soi", "is_core": True, "deleted": False, "num": 2, "quarter": "ROLL", "scope": "State",
              "short": "State AR", "title": "Annual Report / Statement of Information", "due_type": "rolling",
-             "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
-             "info": "State required business entity renewal."},
+             "due_month": None, "due_day": None, "due_text": "Annually", "entity": "For-Profit",
+             "info": "State required business entity renewal."}
         ]
 
     for t in tasks_to_seed:
         db.add(models.Task(**t))
+
     await db.commit()
     return {"status": "success", "seeded": len(tasks_to_seed)}
 
