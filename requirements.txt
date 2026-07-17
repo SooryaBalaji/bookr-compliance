@@ -4,5 +4,9 @@ sqlalchemy
 asyncpg
 pydantic
 pydantic-settings
+email-validator
 alembic
 python-dotenv
+bcrypt
+python-jose[cryptography]
+python-multipart

@@ -1,34 +1,99 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
 
-# Task schemas
-class TaskBase(BaseModel):
-    title: str = Field(..., example="California Statement of Information")
-    status: str = Field(..., example="Pending")
-    description: str = Field(..., example="Details about the filing...")
-    due_date: Optional[datetime] = None
 
-class TaskCreate(TaskBase):
-    # Schema for creating a new task from the front end
-    pass
+# ---------- Auth / Users ----------
 
-class TaskResponse(TaskBase):
-    #Schema for sending task data back to the frontend
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    full_name: Optional[str] = None
+
+
+class UserResponse(BaseModel):
     id: int
-    owner_id: Optional[int] = None
+    email: EmailStr
+    full_name: Optional[str] = None
+    role: str
 
     class Config:
-        # This tells Pydantic to read data directly from the SQLAlchemy ORM model
         from_attributes = True
 
-# Audit Log Schemas
-class AuditLogResponse(BaseModel):
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+# ---------- Tasks ----------
+
+class TaskCreate(BaseModel):
+    short: str
+    title: str
+    scope: str = "Internal"
+    quarter: str = "ROLL"
+    due_type: str = "fixed"
+    due_month: Optional[int] = None
+    due_day: Optional[int] = None
+    due_text: Optional[str] = None
+    target_year: Optional[int] = None
+    entity: Optional[str] = "Bookr, Inc."
+    portal_name: Optional[str] = None
+    portal_url: Optional[str] = None
+    alt_note: Optional[str] = None
+    info: Optional[str] = None
+
+
+class TaskResponse(BaseModel):
     id: int
-    timestamp: datetime
+    key: str
+    is_core: bool
+    num: Optional[int] = None
+    quarter: Optional[str] = None
+    scope: Optional[str] = None
+    short: str
+    title: str
+    due_type: str
+    due_month: Optional[int] = None
+    due_day: Optional[int] = None
+    due_text: Optional[str] = None
+    target_year: Optional[int] = None
+    entity: Optional[str] = None
+    portal_name: Optional[str] = None
+    portal_url: Optional[str] = None
+    alt_note: Optional[str] = None
+    info: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- Compliance logs ----------
+
+class LogCreate(BaseModel):
+    task_id: int
+    fiscal_year: int
+    action: str = "filed"
+    date: Optional[str] = None
+    cloud_link: Optional[str] = None
+    note: Optional[str] = None
+    file_name: Optional[str] = None
+    file_data: Optional[str] = None
+
+
+class LogResponse(BaseModel):
+    id: int
+    task_id: int
+    fiscal_year: int
     action: str
-    target_id: Optional[int]
-    details: Optional[str]
+    date: Optional[str] = None
+    cloud_link: Optional[str] = None
+    note: Optional[str] = None
+    file_name: Optional[str] = None
+    file_data: Optional[str] = None
+    timestamp: datetime
 
     class Config:
         from_attributes = True

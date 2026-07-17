@@ -10,7 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght=0,9..144,300..600;1,9..144,400&family=IBM+Plex+Mono:wght=400;500&family=Inter:wght=400;500;600&display=swap" rel="stylesheet">
 
   <style>
-    /* CSS VARIABLE PATTERNS & THEME DEFINITIONS */
+    /* =========================================================
+       CSS VARIABLE PATTERNS & THEME DEFINITIONS
+       ========================================================= */
     :root {
       --bg: #fbfbfa;
       --surface: #ffffff;
@@ -487,9 +489,43 @@
 </head>
 <body>
 
+  <div class="modal-overlay open" id="authOverlay" style="z-index:999;">
+    <div class="modal-container" style="max-width:380px;">
+      <div class="modal-header">
+        <h2 id="authTitle">Sign In — Bookr Compliance</h2>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div id="authError" style="display:none; background:#fef2f2; color:var(--overdue); border:1px solid #fecaca; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px;"></div>
+        <div class="task-form-grid" style="grid-template-columns: 1fr;">
+          <div class="field" id="authNameField" style="display:none;">
+            <label>Full Name</label>
+            <input type="text" id="authName" placeholder="Jane Smith">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="authEmail" placeholder="you@bookr.com">
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="authPassword" placeholder="At least 8 characters">
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <button class="btn ghost" type="button" id="authToggleMode" style="padding:6px 4px;">Need an account? Register</button>
+            <button class="btn primary" type="button" id="authSubmitBtn">Sign In</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <div class="sidebar">
       <div class="brand-title">Bookr, Inc.</div>
+      <div class="sidebar-section">
+        <h4>Signed In As</h4>
+        <div style="font-size:13px; color:var(--ink-dim); margin-bottom:8px;" id="currentUserLabel">—</div>
+        <button class="btn mini" id="logoutBtn" style="width:100%;">Log Out</button>
+      </div>
       <div class="sidebar-section">
         <h4>Status Matrix <span style="font-size:10px; opacity:0.6;" id="matrixYearLabel"></span></h4>
         <div id="statsList"></div>
@@ -570,276 +606,109 @@
   </div>
 
   <script>
-  let CORE_TASKS = [
-    {
-      id:'1099nec', num:1, quarter:'Q1', scope:'Federal', short:'1099-NEC',
-      title:'Form 1099-NEC Filing & Distribution',
-      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'IRS FIRE System', url:'https://fire.irs.gov/'},
-      altNote:'Can also be filed directly through payroll software such as Gusto or Rippling.',
-      info:'Required only if Bookr paid an unincorporated contractor, freelancer, or unincorporated LLC $600 or more in the prior calendar year via ACH, check, or wire. Pebble LLC is paid by company credit card, so Pebble is exempt regardless of amount. Confirm against your actual vendor payment ledger.'
-    },
-    {
-      id:'w2w3', num:2, quarter:'Q1', scope:'Federal', short:'W-2 / W-3',
-      title:'Wage and Tax Statements (Forms W-2 & W-3)',
-      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'SSA Business Services Online', url:'https://www.ssa.gov/bso'},
-      altNote:'Managed comprehensively through your integrated Gusto workspace platform configurations.',
-      info:'Applies — public listings put Bookr at roughly 11–60 W-2 employees, so this filing is live every year. The W-2 reports individual employee earnings/withholdings; the W-3 is the master transmittal filed with SSA.'
-    },
-    {
-      id:'941q4', num:3, quarter:'Q1', scope:'Federal', short:'941 Q4',
-      title:'Federal Employer’s Quarterly Tax Return (Form 941) — Q4 filing',
-      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Gusto automated scheduling runs this background process pipeline cleanly.',
-      info:'Reconciles federal income tax withholding plus Social Security and Medicare tax for Q4. Bookr has no proprietary software engineering function, so Line 11 stays blank — no R&D payroll tax offset applies.'
-    },
-    {
-      id:'940', num:4, quarter:'Q1', scope:'Federal', short:'940 FUTA',
-      title:'Federal Annual Unemployment Tax Return (Form 940)',
-      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Handled natively by payroll processing parameters within Gusto.',
-      info:'Assesses FUTA liability on the first $7,000 paid to each individual W-2 employee for the year. Applies given Bookr’s active payroll.'
-    },
-    {
-      id:'de9q4', num:5, quarter:'Q1', scope:'California', short:'DE 9/9C Q4',
-      title:'CA EDD Quarterly Payroll Returns (DE 9 & DE 9C) — Q4 filing',
-      dueType:'fixed', dueMonth:1, dueDay:31, dueText:'January 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'CA EDD e-Services for Business', url:'https://eddservices.edd.ca.gov/'},
-      altNote:'Gusto updates status parameter arrays automatically.',
-      info:'DE 9 reconciles total state payroll tax; DE 9C reports individual employee wage and SDI detail. Applies — Bookr is headquartered and staffed in California.'
-    },
-    {
-      id:'defranchise', num:6, quarter:'Q1', scope:'Delaware', short:'DE Franchise Tax',
-      title:'Delaware Annual Franchise Tax & Report',
-      dueType:'fixed', dueMonth:3, dueDay:1, dueText:'March 1',
-      entity:'Bookr, Inc. (DE)',
-      portal:{name:'Delaware Division of Corporations — eCorp', url:'https://icis.corp.delaware.gov/Ecorp/LoginTax.aspx?FilingType=FranchiseTax'},
-      info:'Confirmed applicable: Bookr’s CA Secretary of State record lists "Formed In: Delaware," meaning it is a Delaware corporation foreign‑qualified in California. Use the Assumed Par Value Capital Method for the lowest tier. $50 filing fee + $400 minimum tax.'
-    },
-    {
-      id:'571l', num:7, quarter:'Q2', scope:'California', short:'571-L',
-      title:'California Business Property Statement (Form 571-L)',
-      dueType:'fixed', dueMonth:4, dueDay:1, dueText:'April 1',
-      entity:'Bookr, Inc.',
-      portal:{name:'Contra Costa County Assessor — e-SDR', url:'https://www.contracosta.ca.gov/5498/Business-Personal-Property-e-File'},
-      info:'A 10% late penalty applies if not filed/postmarked by May 7. Only required if unsecured business personal property (servers, furniture, computers) at the Walnut Creek office totals $100,000+ in historical cost.'
-    },
-    {
-      id:'1120', num:8, quarter:'Q2', scope:'Federal', short:'Form 1120',
-      title:'U.S. Corporation Income Tax Return (Form 1120)',
-      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS (payment)', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Can be extended six months to October 15 by filing Form 7004 before this date.',
-      info:'Core federal income tax return — always applies to a C-corp. Tracks service revenue from non-profit clients minus operating costs; vendor platform subscription fees are deducted as ordinary business deductions.'
-    },
-    {
-      id:'ftb100', num:9, quarter:'Q2', scope:'California', short:'FTB Form 100',
-      title:'CA Corporation Franchise & Income Tax Return (FTB Form 100)',
-      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
-      altNote:'California grants an automatic paperwork extension to November 15, but any tax owed must still be paid by April 15.',
-      info:'Confirmed applicable — Bookr’s public filing record shows Franchise Tax Board standing as "Good." Assesses CA’s flat 8.84% rate on income apportioned to the state. The $800 annual minimum franchise tax is due every year.'
-    },
-    {
-      id:'fed1120w1', num:10, quarter:'Q2', scope:'Federal', short:'1120-W #1',
-      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 1',
-      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      info:'Required once Bookr anticipates annual federal corporate income tax liability of $500 or more.'
-    },
-    {
-      id:'ca100es1', num:11, quarter:'Q2', scope:'California', short:'100-ES #1',
-      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 1',
-      dueType:'fixed', dueMonth:4, dueDay:15, dueText:'April 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
-      info:'California uses an uneven schedule — this first installment must cover 30% of estimated annual state tax.'
-    },
-    {
-      id:'941de9q1', num:12, quarter:'Q2', scope:'Federal', short:'941 / DE9 Q1',
-      title:'Form 941 & CA EDD DE 9/9C — Q1 filing',
-      dueType:'fixed', dueMonth:4, dueDay:30, dueText:'April 30',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Processed in full through dynamic backend actions in Gusto.',
-      info:'Regular quarterly reporting of Q1 employee payroll withholdings and matching corporate payroll taxes.'
-    },
-    {
-      id:'fed1120w2', num:13, quarter:'Q2', scope:'Federal', short:'1120-W #2',
-      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 2',
-      dueType:'fixed', dueMonth:6, dueDay:15, dueText:'June 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      info:'Second quarterly installment of estimated federal corporate income tax.'
-    },
-    {
-      id:'ca100es2', num:14, quarter:'Q2', scope:'California', short:'100-ES #2',
-      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 2',
-      dueType:'fixed', dueMonth:6, dueDay:15, dueText:'June 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
-      info:'This second installment must cover 40% of estimated annual state tax.'
-    },
-    {
-      id:'941de9q2', num:15, quarter:'Q3', scope:'Federal', short:'941 / DE9 Q2',
-      title:'Form 941 & CA EDD DE 9/9C — Q2 filing',
-      dueType:'fixed', dueMonth:7, dueDay:31, dueText:'July 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Automated framework updates managed via Gusto accounts.',
-      info:'Regular quarterly reporting of Q2 employee payroll withholdings and matching corporate payroll taxes.'
-    },
-    {
-      id:'fed1120w3', num:16, quarter:'Q3', scope:'Federal', short:'1120-W #3',
-      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 3',
-      dueType:'fixed', dueMonth:9, dueDay:15, dueText:'September 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      info:'Third quarterly installment of estimated federal corporate income tax.'
-    },
-    {
-      id:'ca100es3', num:17, quarter:'Q3', scope:'California', short:'100-ES #3',
-      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 3',
-      dueType:'fixed', dueMonth:9, dueDay:15, dueText:'September 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
-      info:'Under California’s staggered model this installment’s allocation is 0% — no payment due — provided the prior installments were paid.'
-    },
-    {
-      id:'941de9q3', num:18, quarter:'Q4', scope:'Federal', short:'941 / DE9 Q3',
-      title:'Form 941 & CA EDD DE 9/9C — Q3 filing',
-      dueType:'fixed', dueMonth:10, dueDay:31, dueText:'October 31',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS / CA EDD e-Services', url:'https://www.eftps.gov/eftps/'},
-      altNote:'Corporate updates deployed to state agencies through Gusto pipelines.',
-      info:'Regular quarterly reporting of Q3 employee payroll withholdings and matching corporate payroll taxes.'
-    },
-    {
-      id:'fed1120w4', num:19, quarter:'Q4', scope:'Federal', short:'1120-W #4',
-      title:'Federal Quarterly Estimated Income Tax (Form 1120-W) — Installment 4',
-      dueType:'fixed', dueMonth:12, dueDay:15, dueText:'December 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'EFTPS', url:'https://www.eftps.gov/eftps/'},
-      info:'Fourth and final quarterly installment of estimated federal corporate income tax.'
-    },
-    {
-      id:'ca100es4', num:20, quarter:'Q4', scope:'California', short:'100-ES #4',
-      title:'California Corporate Estimated Tax (Form 100-ES) — Installment 4',
-      dueType:'fixed', dueMonth:12, dueDay:15, dueText:'December 15',
-      entity:'Bookr, Inc.',
-      portal:{name:'FTB Web Pay for Businesses', url:'https://webapp.ftb.ca.gov/webpay/login/belogin'},
-      info:'Covers the remaining 30% allocation of estimated annual California corporate tax.'
-    },
-    {
-      id:'si550', num:21, quarter:'ROLL', scope:'California', short:'Form SI-550',
-      title:'California Statement of Information (Form SI-550)',
-      dueType:'fixed', dueMonth:8, dueDay:31, dueText:'August 31 (anniversary month)',
-      entity:'Bookr, Inc.',
-      portal:{name:'CA Secretary of State — bizfile Online', url:'https://bizfileonline.sos.ca.gov/'},
-      info:'Confirmed from Bookr’s public SOS record: late August is the real annual deadline. Filing fee $25. Missing it triggers an automatic $250 penalty.'
-    },
-    {
-      id:'wcbiz', num:22, quarter:'ROLL', scope:'California', short:'WC Business License',
-      title:'City of Walnut Creek Business Tax Certificate (Business License)',
-      dueType:'rolling', dueText:'Annually — due on the last day of the month before expiration.',
-      entity:'Bookr, Inc.',
-      portal:{name:'Walnut Creek HdLgov Business Portal', url:'https://walnutcreek.hdlgov.com/'},
-      info:'Confirmed applicable — Bookr’s headquarters at 2099 Mt. Diablo Blvd is inside Walnut Creek city limits. Missing renewal triggers an immediate 25% penalty.'
-    },
-    {
-      id:'formalities', num:23, quarter:'ROLL', scope:'Internal', short:'Corp Formalities',
-      title:'Mandatory Annual Corporate Formalities',
-      dueType:'rolling', dueText:'Annually — best practice is to finalize within 5 months of fiscal year close.',
-      entity:'Bookr, Inc.',
-      portal:null,
-      portalNote:'Internal record keeping only — no government portal. Executed via secure document software.',
-      info:'To preserve the corporate veil, Bookr must execute Unanimous Written Consents for Shareholders and Directors (Officers: Girish Dinakaran, James Munch), then store both in the Corporate Minute Book.'
-    },
-    {
-      id:'regagent', num:24, quarter:'ROLL', scope:'Delaware', short:'Registered Agent',
-      title:'Registered Agent Annual Renewal',
-      dueType:'rolling', dueText:'Annually, on the service provider’s contract anniversary date.',
-      entity:'Bookr, Inc. (DE)',
-      portal:{name:'EntityCompli / Vcorp Portal', url:'https://www.entitycompli.com/'},
-      info:'Confirmed — Bookr’s public SOS record lists Vcorp Agent Services, Inc. as registered agent. Non-payment causes the agent to resign.'
-    },
-    {
-      id:'idmsosca', num:25, quarter:'ROLL', scope:'California', short:'CA SoS IDM',
-      title:'CA Secretary of State Identity Management Portal Access',
-      dueType:'rolling', dueText:'Continuous account management.',
-      entity:'All Entities',
-      portal:{name:'idm.sos.ca.gov', url:'https://idm.sos.ca.gov/signin/register'},
-      info:'Master CA SoS Identity Management credential system registration. Used to manage state-level organizational filing identities across all operational corporate structures.'
-    },
-    {
-      id:'everify', num:26, quarter:'ROLL', scope:'Federal', short:'E-Verify USCIS',
-      title:'E-Verify USCIS New Hire Verification Enrollment Protocol',
-      dueType:'rolling', dueText:'Mandated for compliance upon onboarding new individuals.',
-      entity:'Bookr, Inc.',
-      portal:{name:'idp.uscis.gov', url:'https://secure.login.gov/'},
-      info:'Workforce alignment tracking infrastructure configuration. Action Item Required: Girish to Register / Enroll inside Login.gov engine workspace to finish overall backend programmatic verification sync.'
-    },
-    {
-      id:'eftpsgov', num:27, quarter:'ROLL', scope:'Federal', short:'EFTPS Portal',
-      title:'Federal Tax Portal Access and PIN Security Profile',
-      dueType:'rolling', dueText:'Continuous account management.',
-      entity:'Bookr, Inc.',
-      portal:{name:'www.eftps.gov', url:'https://secure.login.gov/'},
-      info:'IRS Federal Tax Payment Portal engine setup. Access metrics verification required. Action Item Required: Girish to complete official profile setup.'
-    },
-    {
-      id:'coterie', num:28, quarter:'ROLL', scope:'Insurance', short:'Coterie Insurance',
-      title:'Coterie Insurance Renewal (Professional Liability)',
-      dueType:'rolling', dueText:'Annually — monitor operational window boundaries.',
-      entity:'Bookr, Inc.',
-      portal:{name:'Coterie Policy Workspace', url:'https://mypolicycenter.coterieinsurance.com/signin'},
-      info:'Corporate commercial liability platform configuration, protecting professional code structures and client consultation assets.'
-    },
-    {
-      id:'sterling', num:29, quarter:'ROLL', scope:'Federal', short:'Sterling HSA POP',
-      title:'Sterling HSA Premium Only Plan Corporate Compliance Check',
-      dueType:'rolling', dueText:'Continuous operational window monitoring status.',
-      entity:'Bookr, Inc.',
-      portal:{name:'Sterling HSA Engine', url:'https://www.sterlinghsa.com/Accounts/Login/'},
-      info:'Premium Only Plan alignment checks mandated under IRS section code variables. Secured through Madeline King at Engers Benefit Group.'
-    },
-    {
-      id:'anthem', num:30, quarter:'ROLL', scope:'Insurance', short:'Anthem Portal',
-      title:'Anthem Employer Health Insurance Premium Portal Management',
-      dueType:'rolling', dueText:'Monthly accounting pipeline reconciliations.',
-      entity:'Bookr, Inc.',
-      portal:{name:'Anthem Employer Center', url:'https://employer.anthem.com/eea/public/login'},
-      info:'Core operational workspace hub for tracking state group health enrollment variables and employee eligibility metrics.'
-    },
-    {
-      id:'hartford', num:31, quarter:'ROLL', scope:'Insurance', short:'Hartford Business',
-      title:'Hartford Insurance Policy Renewal (General Liability / Property)',
-      dueType:'rolling', dueText:'Annually — inspect coverage boundaries.',
-      entity:'Bookr, Inc.',
-      portal:{name:'The Hartford Account Center', url:'https://account.thehartford.com/customer/login'},
-      info:'Primary operational business liability and physical property infrastructure safety matrix handling.'
-    },
-    {
-      id:'travelers', num:32, quarter:'ROLL', scope:'Insurance', short:'Travelers Workers Comp',
-      title:'Travelers Worker’s Compensation Insurance Compliance Policy',
-      dueType:'rolling', dueText:'Annually — monitor state insurance payroll audits.',
-      entity:'Bookr, Inc.',
-      portal:{name:'Travelers Portal Engine', url:'https://signin.travelers.com/'},
-      info:'Statutory payroll worker safety policy mandated by the State of California matching team expansion records.'
-    }
-  ];
+  // ===========================================================
+  // AUTH + API CLIENT
+  // Talks to the FastAPI backend mounted at the same origin.
+  // ===========================================================
+  const API_BASE = '';
+  let AUTH_TOKEN = localStorage.getItem('bookr_token') || null;
+  let CURRENT_USER = null;
+  let authMode = 'login'; // 'login' | 'register'
 
+  async function apiFetch(path, options = {}) {
+    const headers = Object.assign({}, options.headers || {});
+    if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
+    if (options.body && !(options.body instanceof URLSearchParams)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
+    if (res.status === 401) {
+      logOut();
+      throw new Error('Session expired, please sign in again.');
+    }
+    if (!res.ok) {
+      let detail = 'Request failed';
+      try { detail = (await res.json()).detail || detail; } catch (e) {}
+      throw new Error(detail);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  function showAuthScreen() {
+    document.getElementById('authOverlay').classList.add('open');
+  }
+  function hideAuthScreen() {
+    document.getElementById('authOverlay').classList.remove('open');
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    document.getElementById('authTitle').textContent = mode === 'login' ? 'Sign In — Bookr Compliance' : 'Create Account — Bookr Compliance';
+    document.getElementById('authNameField').style.display = mode === 'login' ? 'none' : 'block';
+    document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+    document.getElementById('authToggleMode').textContent = mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign in';
+    document.getElementById('authError').style.display = 'none';
+  }
+
+  async function submitAuthForm() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errBox = document.getElementById('authError');
+    errBox.style.display = 'none';
+    try {
+      let data;
+      if (authMode === 'login') {
+        const body = new URLSearchParams();
+        body.set('username', email);
+        body.set('password', password);
+        data = await apiFetch('/auth/login', { method: 'POST', body });
+      } else {
+        const fullName = document.getElementById('authName').value.trim();
+        data = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ email, password, full_name: fullName })
+        });
+      }
+      AUTH_TOKEN = data.access_token;
+      CURRENT_USER = data.user;
+      localStorage.setItem('bookr_token', AUTH_TOKEN);
+      hideAuthScreen();
+      await startApp();
+    } catch (e) {
+      errBox.textContent = e.message || 'Something went wrong.';
+      errBox.style.display = 'block';
+    }
+  }
+
+  function logOut() {
+    AUTH_TOKEN = null;
+    CURRENT_USER = null;
+    localStorage.removeItem('bookr_token');
+    showAuthScreen();
+  }
+
+  async function bootAuth() {
+    document.getElementById('authToggleMode').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
+    document.getElementById('authSubmitBtn').addEventListener('click', submitAuthForm);
+    document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
+    document.getElementById('logoutBtn').addEventListener('click', logOut);
+
+    if (AUTH_TOKEN) {
+      try {
+        CURRENT_USER = await apiFetch('/auth/me');
+        hideAuthScreen();
+        await startApp();
+        return;
+      } catch (e) {
+        AUTH_TOKEN = null;
+        localStorage.removeItem('bookr_token');
+      }
+    }
+    showAuthScreen();
+  }
+
+  // Live task list + log history, populated from the API by loadDatabase().
   let TASKS = [];
   let STATE_LOGS = [];
 
@@ -863,49 +732,89 @@
     return targetDate;
   }
 
-  function init() {
-    loadDatabase();
+  let appInitialized = false;
+
+  async function startApp() {
+    document.getElementById('currentUserLabel').textContent = CURRENT_USER ? (CURRENT_USER.full_name || CURRENT_USER.email) : '—';
+
+    await loadDatabase();
     buildYearDropdownSelectors();
-    
-    document.getElementById('prevMonth').addEventListener('click', () => adjustMonth(-1));
-    document.getElementById('nextMonth').addEventListener('click', () => adjustMonth(1));
-    document.getElementById('todayBtn').addEventListener('click', setToCurrentCycle);
-    
-    document.getElementById('yearSelect').addEventListener('change', (e) => {
-      state.currentYear = parseInt(e.target.value);
-      render();
-    });
 
-    document.getElementById('searchBox').addEventListener('input', (e) => {
-      state.searchQuery = e.target.value.trim().toLowerCase();
-      render();
-    });
+    if (!appInitialized) {
+      appInitialized = true;
+      document.getElementById('prevMonth').addEventListener('click', () => adjustMonth(-1));
+      document.getElementById('nextMonth').addEventListener('click', () => adjustMonth(1));
+      document.getElementById('todayBtn').addEventListener('click', setToCurrentCycle);
 
-    document.getElementById('quickFilterSelect').addEventListener('change', (e) => {
-      state.quickFilter = e.target.value;
-      render();
-    });
+      document.getElementById('yearSelect').addEventListener('change', (e) => {
+        state.currentYear = parseInt(e.target.value);
+        render();
+      });
 
-    document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
-    document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
-    document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
-    document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
+      document.getElementById('searchBox').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value.trim().toLowerCase();
+        render();
+      });
 
-    setupViewToggles();
+      document.getElementById('quickFilterSelect').addEventListener('change', (e) => {
+        state.quickFilter = e.target.value;
+        render();
+      });
+
+      document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
+      document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
+      document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
+      document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
+
+      setupViewToggles();
+    }
+
     render();
   }
 
+  // Pulls the live task list + compliance log history from the backend API
+  // and normalizes them into the same shape the rest of the UI already expects.
   async function loadDatabase() {
     try {
-        const response = await fetch('/tasks/');
-        if (response.ok) {
-            TASKS = await response.json();
-            render(); // This redraws your UI with the real data
-        }
-    } catch (err) {
-        console.error("Could not fetch tasks from server:", err);
+      const [apiTasks, apiLogs] = await Promise.all([
+        apiFetch('/tasks/'),
+        apiFetch('/logs/'),
+      ]);
+
+      TASKS = apiTasks.map(t => ({
+        id: t.id,
+        num: t.num,
+        quarter: t.quarter,
+        scope: t.scope,
+        short: t.short,
+        title: t.title,
+        dueType: t.due_type,
+        dueMonth: t.due_month,
+        dueDay: t.due_day,
+        dueText: t.due_text,
+        entity: t.entity,
+        portal: t.portal_name ? { name: t.portal_name, url: t.portal_url } : null,
+        altNote: t.alt_note,
+        info: t.info,
+      }));
+
+      STATE_LOGS = apiLogs.map(l => ({
+        id: l.id,
+        taskId: l.task_id,
+        timestamp: (l.timestamp || '').replace('T', ' ').substring(0, 19),
+        action: l.action,
+        fiscalYear: l.fiscal_year,
+        date: l.date,
+        cloudLink: l.cloud_link,
+        note: l.note,
+        fileData: l.file_data,
+        fileName: l.file_name,
+      }));
+    } catch (e) {
+      console.error('Could not load data from server:', e);
+      alert('Could not load data from the server: ' + e.message);
     }
-}
+  }
 
   function buildYearDropdownSelectors() {
     const select = document.getElementById('yearSelect');
@@ -1238,11 +1147,13 @@
     container.appendChild(gridDiv);
   }
 
-  function clearAllGlobalLogs() {
+  async function clearAllGlobalLogs() {
     if (confirm("Are you sure you want to completely wipe the global audit registry? This action cannot be undone.")) {
-      STATE_LOGS = [];
-      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
-      render();
+      try {
+        await apiFetch('/logs/', { method: 'DELETE' });
+        await loadDatabase();
+        render();
+      } catch (e) { alert('Could not clear the audit registry: ' + e.message); }
     }
   }
 
@@ -1281,7 +1192,7 @@
         <div class="actions">
           ${cloudButton}
           ${dlButton}
-          <span class="del-btn-icon" onclick="deleteHistoryEntryGlobal('${l.id}')">&times;</span>
+          <span class="del-btn-icon" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</span>
         </div>
       `;
       stackContainer.appendChild(card);
@@ -1291,16 +1202,12 @@
   }
 
   async function deleteTask(taskId) {
-    if(!confirm("Permanently delete this task from the database?")) return;
-
-    const response = await fetch(`/tasks/${taskId}`, {
-        method: 'DELETE'
-    });
-
-    if (response.ok) {
-        loadDatabase(); // Refresh the board after successful delete
-    } else {
-        alert("Failed to delete task.");
+    if(confirm("Are you sure you want to permanently delete this task?")) {
+      try {
+        await apiFetch(`/tasks/${taskId}`, { method: 'DELETE' });
+        await loadDatabase();
+        render();
+      } catch (e) { alert('Could not delete task: ' + e.message); }
     }
   }
 
@@ -1337,7 +1244,7 @@
           </div>
           <div class="status-block">
             <span class="badge ${t.quarter}">${t.quarter}</span>
-            <button class="btn-delete" onclick="deleteTask('${t.id}')">Delete</button>
+            <button class="btn-delete" onclick="deleteTask(${t.id})">Delete</button>
             <div style="display:flex; align-items:center; gap:4px;">
               ${getIconForStatus(status)}
               <span class="status-label ${status}">${getStatusLabel(status)}</span>
@@ -1355,8 +1262,8 @@
         <div class="action-row">
           ${portalContent}
           ${altActionHtml}
-          <button class="btn mini ghost" onclick="toggleFormInline('${t.id}')">Log Execution Status</button>
-          <button class="btn mini ghost" onclick="toggleHistoryPanelInline('${t.id}')">Form File Archive</button>
+          <button class="btn mini ghost" onclick="toggleFormInline(${t.id})">Log Execution Status</button>
+          <button class="btn mini ghost" onclick="toggleHistoryPanelInline(${t.id})">Form File Archive</button>
         </div>
 
         <div class="inline-form" id="form-${t.id}">
@@ -1390,7 +1297,7 @@
               <input type="text" id="note-${t.id}" placeholder="Add confirmation numbers, state IDs, or extra notes here..." style="width:100%;">
             </div>
             <div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 8px;">
-               <button class="btn mini primary" onclick="submitExecutionFormInline('${t.id}')">Commit Action</button>
+               <button class="btn mini primary" onclick="submitExecutionFormInline(${t.id})">Commit Action</button>
             </div>
           </div>
         </div>
@@ -1444,13 +1351,13 @@
         <td>${l.date}</td>
         <td>${cloudLink}</td>
         <td>${dlLink}</td>
-        <td class="del-x" onclick="deleteHistoryEntryGlobal('${l.id}')">&times;</td>
+        <td class="del-x" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  function submitExecutionFormInline(id) {
+  async function submitExecutionFormInline(id) {
     const actionValue = document.getElementById(`act-${id}`).value;
     const fiscalYearVal = document.getElementById(`fyear-${id}`).value;
     const dateValue = document.getElementById(`date-${id}`).value;
@@ -1458,62 +1365,69 @@
     const noteValue = document.getElementById(`note-${id}`).value;
     const fileInput = document.getElementById(`file-${id}`);
 
-    if (actionValue === 'clear_all') {
-      if (confirm("Are you sure you want to completely wipe all logged submission histories for this specific milestone?")) {
-        STATE_LOGS = STATE_LOGS.filter(l => l.taskId !== id);
-        localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+    try {
+      if (actionValue === 'clear_all') {
+        if (confirm("Are you sure you want to completely wipe all logged submission histories for this specific milestone?")) {
+          await apiFetch(`/logs/?task_id=${id}`, { method: 'DELETE' });
+          document.getElementById(`form-${id}`).classList.remove('open');
+          await loadDatabase();
+          render();
+        }
+        return;
+      } else if (actionValue === 'reset') {
+        await apiFetch(`/logs/?task_id=${id}&fiscal_year=${parseInt(fiscalYearVal)}`, { method: 'DELETE' });
         document.getElementById(`form-${id}`).classList.remove('open');
+        await loadDatabase();
         render();
         return;
-      } else { return; }
-    } else if (actionValue === 'reset') {
-      STATE_LOGS = STATE_LOGS.filter(l => !(l.taskId === id && parseInt(l.fiscalYear) === parseInt(fiscalYearVal)));
-      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
-      document.getElementById(`form-${id}`).classList.remove('open');
-      render();
-      return;
-    }
+      }
 
-    const saveLogData = (fileBase64 = null, fileName = null) => {
-      STATE_LOGS.push({
-        id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        taskId: id,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-        action: actionValue,
-        fiscalYear: parseInt(fiscalYearVal),
-        date: dateValue,
-        cloudLink: cloudLinkValue,
-        note: noteValue,
-        fileData: fileBase64,
-        fileName: fileName
-      });
-      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
-      document.getElementById(`form-${id}`).classList.remove('open');
-      render();
-      const hist = document.getElementById(`hist-${id}`);
-      if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(id);
-    };
-
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      const targetFile = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        saveLogData(e.target.result, targetFile.name);
+      const saveLogData = async (fileBase64 = null, fileName = null) => {
+        await apiFetch('/logs/', {
+          method: 'POST',
+          body: JSON.stringify({
+            task_id: id,
+            action: actionValue,
+            fiscal_year: parseInt(fiscalYearVal),
+            date: dateValue,
+            cloud_link: cloudLinkValue,
+            note: noteValue,
+            file_data: fileBase64,
+            file_name: fileName,
+          })
+        });
+        document.getElementById(`form-${id}`).classList.remove('open');
+        await loadDatabase();
+        render();
+        const hist = document.getElementById(`hist-${id}`);
+        if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(id);
       };
-      reader.readAsDataURL(targetFile);
-    } else {
-      saveLogData();
+
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const targetFile = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          saveLogData(e.target.result, targetFile.name);
+        };
+        reader.readAsDataURL(targetFile);
+      } else {
+        await saveLogData();
+      }
+    } catch (e) {
+      alert('Could not save execution log: ' + e.message);
     }
   }
 
-  function deleteHistoryEntryGlobal(logId) {
+  async function deleteHistoryEntryGlobal(logId) {
     let taskId = null;
     const logItem = STATE_LOGS.find(l => l.id === logId);
     if (logItem) taskId = logItem.taskId;
 
-    STATE_LOGS = STATE_LOGS.filter(l => l.id !== logId);
-    localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
-    
+    try {
+      await apiFetch(`/logs/${logId}`, { method: 'DELETE' });
+      await loadDatabase();
+    } catch (e) { alert('Could not delete log entry: ' + e.message); return; }
+
     render();
     if (taskId) {
       const hist = document.getElementById(`hist-${taskId}`);
@@ -1639,23 +1553,47 @@
   }
 
   async function commitCustomMilestoneObject() {
-    const taskData = {
-        title: document.getElementById('newTitle').value,
-        description: document.getElementById('newInfo').value,
-        status: "Pending"
+    const sToken = document.getElementById('newShort').value.trim();
+    const titleText = document.getElementById('newTitle').value.trim();
+    if (!sToken || !titleText) { alert('Please compile required text parameters.'); return; }
+
+    const type = document.getElementById('newDueType').value;
+    const m = parseInt(document.getElementById('newDueMonth').value);
+    const d = parseInt(document.getElementById('newDueDay').value);
+    const targetYr = parseInt(document.getElementById('newTargetYear').value);
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const portalName = document.getElementById('newPortalName').value.trim();
+
+    const payload = {
+      quarter: document.getElementById('newQuarter').value,
+      scope: document.getElementById('newScope').value,
+      short: sToken,
+      title: titleText,
+      due_type: type,
+      due_month: type === 'fixed' ? m : null,
+      due_day: type === 'fixed' ? d : null,
+      due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone',
+      target_year: targetYr,
+      entity: document.getElementById('newEntity').value.trim() || 'Bookr, Inc.',
+      portal_name: portalName || null,
+      portal_url: portalName ? (document.getElementById('newPortalUrl').value.trim() || '#') : null,
+      info: document.getElementById('newInfo').value.trim() || 'Custom parameters.'
     };
 
-    const response = await fetch('/tasks/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData)
-    });
+    try {
+      await apiFetch('/tasks/', { method: 'POST', body: JSON.stringify(payload) });
+      await loadDatabase();
 
-    if (response.ok) {
-        closeModalWindow();
-        loadDatabase(); // This refreshes the UI with real data from the DB
-    } else {
-        alert("Server error: Could not save task.");
+      if (targetYr !== state.currentYear) {
+        state.currentYear = targetYr;
+        document.getElementById('yearSelect').value = targetYr;
+      }
+
+      closeModalWindow();
+      render();
+    } catch (e) {
+      alert('Could not save the new milestone: ' + e.message);
     }
   }
 
@@ -1703,7 +1641,7 @@
     document.body.appendChild(dl); dl.click(); document.body.removeChild(dl);
   }
 
-  window.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('DOMContentLoaded', bootAuth);
   </script>
 </body>
 </html>

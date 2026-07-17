@@ -3,53 +3,73 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime, timezone
 
-# Identity and Access Management
-class Role(Base):
-    __tablename__ = "roles"
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True) # e.g., "Admin", "Manager", "Auditor"
-
-class Permission(Base):
-    __tablename__ = "permissions"
-    id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True) # e.g., "task:delete", "report:generate"
-
-class RolePermission(Base):
-    __tablename__ = "role_permissions"
-    role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
-    permission_id = Column(Integer, ForeignKey("permissions.id"), primary_key=True)
 
 class User(Base):
+    """A person who can log into the compliance tracker."""
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True, index=True)
-    password_hash = Column(String)
-    role_id = Column(Integer, ForeignKey("roles.id"))
-    role = relationship("Role")
 
-class UserOverride(Base):
-    __tablename__ = "user_overrides"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    permission_id = Column(Integer, ForeignKey("permissions.id"))
-    effect = Column(Boolean) # True = Grant, False = Revoke
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    full_name = Column(String, nullable=True)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="member")  # "admin" or "member"
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-# Core Compliance Engine
+
 class Task(Base):
+    """
+    A single compliance milestone/filing. This covers both the ~32 seeded
+    "core" filings (federal/state/insurance forms) and any custom milestones
+    a user adds later. is_core distinguishes the two; deleted is a soft-delete
+    flag so core tasks can be hidden without losing their seed row.
+    """
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    status = Column(String)
-    description = Column(String)
-    due_date = Column(DateTime, nullable=True)
+    key = Column(String, unique=True, index=True)  # stable slug, e.g. '1099nec' or 'cust_...'
+    is_core = Column(Boolean, default=False)
+    deleted = Column(Boolean, default=False)
 
-class AuditLog(Base):
-    __tablename__ = "audit_logs"
-    id = Column(Integer, primary_key=True)
-    # Using timezone-aware UTC datetime
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    num = Column(Integer, nullable=True)
+    quarter = Column(String, nullable=True)  # Q1/Q2/Q3/Q4/ROLL/INSURANCE
+    scope = Column(String, nullable=True)    # Federal/California/Delaware/Internal/Insurance
+    short = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+
+    due_type = Column(String, nullable=False, default="fixed")  # 'fixed' or 'rolling'
+    due_month = Column(Integer, nullable=True)
+    due_day = Column(Integer, nullable=True)
+    due_text = Column(String, nullable=True)
+    target_year = Column(Integer, nullable=True)  # only set for custom one-off tasks
+
+    entity = Column(String, nullable=True)
+    portal_name = Column(String, nullable=True)
+    portal_url = Column(String, nullable=True)
+    alt_note = Column(Text, nullable=True)
+    info = Column(Text, nullable=True)
+
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    logs = relationship("ComplianceLog", back_populates="task", cascade="all, delete-orphan")
+
+
+class ComplianceLog(Base):
+    """An execution/filing record logged against a task for a given fiscal year."""
+    __tablename__ = "compliance_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    fiscal_year = Column(Integer, nullable=False)
+    action = Column(String, default="filed")  # currently only 'filed' is used by the UI
+
+    date = Column(String, nullable=True)        # date executed, as entered by the user (YYYY-MM-DD)
+    cloud_link = Column(String, nullable=True)
+    note = Column(Text, nullable=True)
+    file_name = Column(String, nullable=True)
+    file_data = Column(Text, nullable=True)      # base64 data URL of an uploaded proof document
+
     actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    action = Column(String) # e.g., "TASK_EXECUTED", "HISTORY_WIPED"
-    target_id = Column(Integer) # ID of the object changed
-    details = Column(Text)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    task = relationship("Task", back_populates="logs")
