@@ -672,22 +672,31 @@
   let CURRENT_USER = null;
   let authMode = 'login'; // 'login' | 'register'
 
-  async function apiFetch(path, options = {}) {
+   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
     if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
     if (options.body && !(options.body instanceof URLSearchParams)) {
       headers['Content-Type'] = 'application/json';
     }
+
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
+
+    // THE FIX: If the server returns 401, the database is likely wiped.
+    // We treat this as a signal to perform a total clean-up.
     if (res.status === 401) {
-      logOut();
-      throw new Error('Session expired, please sign in again.');
+      localStorage.removeItem('bookr_token');
+      AUTH_TOKEN = null;
+      CURRENT_USER = null;
+      window.location.reload(); // Hard reset
+      throw new Error('Database reset detected. Page reloading...');
     }
+
     if (!res.ok) {
       let detail = 'Request failed';
       try { detail = (await res.json()).detail || detail; } catch (e) {}
       throw new Error(detail);
     }
+
     if (res.status === 204) return null;
     return res.json();
   }
