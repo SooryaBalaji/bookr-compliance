@@ -895,22 +895,17 @@
     render();
   }
 
-  function loadDatabase() {
-    const deletedCore = JSON.parse(localStorage.getItem('bookr_deleted_core') || '[]');
-    let baseTasks = CORE_TASKS.filter(t => !deletedCore.includes(t.id));
-    
-    const customTasks = localStorage.getItem('bookr_custom_tasks');
-    if (customTasks) {
-      try { TASKS = [...baseTasks, ...JSON.parse(customTasks)]; } catch(e) { TASKS = [...baseTasks]; }
-    } else {
-      TASKS = [...baseTasks];
+  async function loadDatabase() {
+    try {
+        const response = await fetch('/tasks/');
+        if (response.ok) {
+            TASKS = await response.json();
+            render(); // This redraws your UI with the real data
+        }
+    } catch (err) {
+        console.error("Could not fetch tasks from server:", err);
     }
-
-    const savedLogs = localStorage.getItem('bookr_compliance_logs');
-    if (savedLogs) {
-      try { STATE_LOGS = JSON.parse(savedLogs); } catch(e) { STATE_LOGS = []; }
-    }
-  }
+}
 
   function buildYearDropdownSelectors() {
     const select = document.getElementById('yearSelect');
@@ -1295,23 +1290,17 @@
     container.appendChild(stackContainer);
   }
 
-  function deleteTask(taskId) {
-    if(confirm("Are you sure you want to permanently delete this task?")) {
-      let customTasks = JSON.parse(localStorage.getItem('bookr_custom_tasks') || '[]');
-      customTasks = customTasks.filter(t => t.id !== taskId);
-      localStorage.setItem('bookr_custom_tasks', JSON.stringify(customTasks));
+  async function deleteTask(taskId) {
+    if(!confirm("Permanently delete this task from the database?")) return;
 
-      let deletedCore = JSON.parse(localStorage.getItem('bookr_deleted_core') || '[]');
-      if(!deletedCore.includes(taskId)) {
-        deletedCore.push(taskId);
-        localStorage.setItem('bookr_deleted_core', JSON.stringify(deletedCore));
-      }
-      
-      STATE_LOGS = STATE_LOGS.filter(l => l.taskId !== taskId);
-      localStorage.setItem('bookr_compliance_logs', JSON.stringify(STATE_LOGS));
+    const response = await fetch(`/tasks/${taskId}`, {
+        method: 'DELETE'
+    });
 
-      loadDatabase();
-      render();
+    if (response.ok) {
+        loadDatabase(); // Refresh the board after successful delete
+    } else {
+        alert("Failed to delete task.");
     }
   }
 
@@ -1649,46 +1638,25 @@
     document.getElementById('modalOverlay').classList.add('open');
   }
 
-  function commitCustomMilestoneObject() {
-    const sToken = document.getElementById('newShort').value.trim();
-    const titleText = document.getElementById('newTitle').value.trim();
-    if (!sToken || !titleText) { alert('Please compile required text parameters.'); return; }
-
-    const type = document.getElementById('newDueType').value;
-    const m = parseInt(document.getElementById('newDueMonth').value);
-    const d = parseInt(document.getElementById('newDueDay').value);
-    const targetYr = parseInt(document.getElementById('newTargetYear').value);
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    
-    const customObj = {
-      id: 'cust_' + Date.now(),
-      num: TASKS.length + 1,
-      quarter: document.getElementById('newQuarter').value,
-      scope: document.getElementById('newScope').value,
-      short: sToken,
-      title: titleText,
-      dueType: type,
-      dueMonth: m,
-      dueDay: d,
-      dueText: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone',
-      entity: document.getElementById('newEntity').value.trim() || 'Bookr, Inc.',
-      portal: document.getElementById('newPortalName').value.trim() ? { name: document.getElementById('newPortalName').value.trim(), url: document.getElementById('newPortalUrl').value.trim() || '#' } : null,
-      info: document.getElementById('newInfo').value.trim() || 'Custom parameters.'
+  async function commitCustomMilestoneObject() {
+    const taskData = {
+        title: document.getElementById('newTitle').value,
+        description: document.getElementById('newInfo').value,
+        status: "Pending"
     };
 
-    let currentCustomList = JSON.parse(localStorage.getItem('bookr_custom_tasks') || '[]');
-    currentCustomList.push(customObj);
-    localStorage.setItem('bookr_custom_tasks', JSON.stringify(currentCustomList));
+    const response = await fetch('/tasks/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+    });
 
-    loadDatabase();
-    
-    if (targetYr !== state.currentYear) {
-      state.currentYear = targetYr;
-      document.getElementById('yearSelect').value = targetYr;
+    if (response.ok) {
+        closeModalWindow();
+        loadDatabase(); // This refreshes the UI with real data from the DB
+    } else {
+        alert("Server error: Could not save task.");
     }
-    
-    closeModalWindow();
-    render();
   }
 
   let activeModalDay = null;

@@ -5,8 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.middleware.cors import CORSMiddleware
 
-# Explicitly use absolute imports
 from app.database import engine, Base, get_db
 from app import models, schemas
 
@@ -26,14 +26,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows your browser (index.html) to hit the backend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Frontend Integration (Working with the HTML)
-# Find the absolute path to your 'static' folder
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 # Tell FastAPI to allow the browser to load your CSS, JS, and Images
 if os.path.exists(STATIC_DIR):
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.get("/")
 async def serve_dashboard():
     # This routes users to your actual UI when they visit localhost:8000
