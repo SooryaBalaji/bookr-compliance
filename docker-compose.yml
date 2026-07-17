@@ -47,6 +47,15 @@ services:
     depends_on:
       - web
 
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./tests:/tests
+    # Tell k6 to run our load script
+    command: run /tests/load.js
+    depends_on:
+      - web
+
 # This ensures your database doesn't wipe itself when you turn the server off
 volumes:
   db-data:
