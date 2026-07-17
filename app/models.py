@@ -13,7 +13,7 @@ class User(Base):
     full_name = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="member")  # "admin" or "member"
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class Task(Base):
@@ -49,7 +49,7 @@ class Task(Base):
     info = Column(Text, nullable=True)
 
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     logs = relationship("ComplianceLog", back_populates="task", cascade="all, delete-orphan")
 
@@ -70,6 +70,6 @@ class ComplianceLog(Base):
     file_data = Column(Text, nullable=True)      # base64 data URL of an uploaded proof document
 
     actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     task = relationship("Task", back_populates="logs")
