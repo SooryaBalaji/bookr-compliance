@@ -49,7 +49,10 @@ if os.path.exists(STATIC_DIR):
 async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
+
+# ---------------------------------------------------------------------------
 # RBAC Dependencies
+# ---------------------------------------------------------------------------
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin privileges required")
@@ -61,10 +64,7 @@ async def get_current_editor(current_user: models.User = Depends(get_current_use
         raise HTTPException(status_code=403, detail="Editor privileges required")
     return current_user
 
-
-# ---------------------------------------------------------------------------
-# Auth & User Management (The CEO's Admin Panel)
-# ---------------------------------------------------------------------------
+# Auth & User Management
 @app.post("/auth/register", response_model=schemas.Token)
 async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
@@ -78,7 +78,7 @@ async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_d
         email=payload.email,
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
-        role="admin" if is_first else "member_read",  # Default new signups to read-only
+        role="admin" if is_first else "member_read",
     )
     db.add(user)
     await db.commit()
@@ -127,26 +127,21 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
 @app.delete("/users/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
                       admin: models.User = Depends(get_current_admin)):
-    if user_id == admin.id:
-        raise HTTPException(status_code=400, detail="You cannot delete your own admin account.")
-
     result = await db.execute(select(models.User).where(models.User.id == user_id))
-    user = result.scalar_one_or_none()
+    target_user = result.scalar_one_or_none()
 
-    if not user:
+    if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # NEW STRICT SAFETY CHECK: Admins cannot delete other admins
-    if user.role == "admin":
-        raise HTTPException(status_code=403,
-                            detail="Security Violation: Admins are not permitted to delete other Admin accounts.")
+    # Block deleting other admins
+    if target_user.role == "admin" and target_user.id != admin.id:
+        raise HTTPException(status_code=403, detail="Security Violation: Cannot delete other Admin accounts.")
 
-    await db.delete(user)
+    await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
 
-# NAICS Onboarding Engine
-
+# NAICS Onboarding Engine (Hybrid Detection)
 class OnboardPayload(BaseModel):
     naics_code: str
     org_type: str
@@ -155,18 +150,13 @@ class OnboardPayload(BaseModel):
 @app.post("/system/onboard")
 async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get_db),
                          admin: models.User = Depends(get_current_admin)):
-    # 1. Clear existing tasks for the fresh start
     await db.execute(text("DELETE FROM tasks"))
-
     tasks_to_seed = []
 
-    # 2. Logic Router based on the user's confirmed dropdown choice
+    # Priority given to explicit dropdown type
     if payload.org_type == "bookr" or payload.naics_code == "541511":
-        # Bookr's specific profile
         tasks_to_seed = CORE_TASKS
-
     elif payload.org_type == "non-profit":
-        # Non-Profit Framework
         tasks_to_seed = [
             {"key": "990", "is_core": True, "deleted": False, "num": 1, "quarter": "Q2", "scope": "Federal",
              "short": "Form 990", "title": "Return of Organization Exempt from Income Tax", "due_type": "fixed",
@@ -177,9 +167,7 @@ async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get
              "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
              "info": "Required to legally ask for donations in the state."},
         ]
-
     else:
-        # Standard For-Profit Framework
         tasks_to_seed = [
             {"key": "1120", "is_core": True, "deleted": False, "num": 1, "quarter": "Q1", "scope": "Federal",
              "short": "Form 1120", "title": "U.S. Corporation Income Tax Return", "due_type": "fixed", "due_month": 4,
@@ -192,11 +180,10 @@ async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get
 
     for t in tasks_to_seed:
         db.add(models.Task(**t))
-
     await db.commit()
     return {"status": "success", "seeded": len(tasks_to_seed)}
 
-# Tasks & Logs (Protected by Editor/Admin roles)
+# Tasks & Logs (Protected)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
 async def list_tasks(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = await db.execute(select(models.Task).where(models.Task.deleted == False))
@@ -209,7 +196,6 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
     key = f"cust_{int(__import__('time').time() * 1000)}"
     count_result = await db.execute(select(models.Task.id))
     next_num = len(count_result.all()) + 1
-
     task = models.Task(key=key, is_core=False, deleted=False, num=next_num, created_by=editor.id,
                        **payload.model_dump())
     db.add(task)
