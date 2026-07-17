@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght=0,9..144,300..600;1,9..144,400&family=IBM+Plex+Mono:wght=400;500&family=Inter:wght=400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
   <style>
     /* =========================================================
@@ -19,7 +20,7 @@
       --surface2: #f4f4f2;
       --border: #e4e4e0;
       --border-soft: #ededea;
-      
+
       --ink: #1c1c1a;
       --ink-dim: #5c5c57;
       --ink-faint: #9c9c93;
@@ -31,7 +32,7 @@
       --ca: #b91c1c;
       --de: #0d9488;
       --intl: #4b5563;
-      --ins: #7c3aed; 
+      --ins: #7c3aed;
 
       /* Target Status Indicators */
       --overdue: #dc2626;
@@ -164,7 +165,7 @@
 
     .view-toggle {
       display: flex;
-      gap: 8px; 
+      gap: 8px;
     }
 
     .view-toggle button, .nav-cluster button, .btn {
@@ -413,7 +414,7 @@
     .pill.scope-de { background: var(--de); }
     .pill.scope-intl { background: var(--intl); }
     .pill.scope-ins { background: var(--ins); }
-    
+
     .due-text { font-size: 12px; color: var(--ink-dim); font-weight: 500; }
     .due-text .cap { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
 
@@ -421,7 +422,7 @@
 
     .inline-form { display: none; margin-top: 12px; padding: 16px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
     .inline-form.open { display: block; }
-    
+
     .form-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
     .field { display: flex; flex-direction: column; gap: 4px; }
     .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); text-transform: uppercase; }
@@ -465,7 +466,7 @@
     .history-archive-card .actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
     .empty-state { padding: 48px; text-align: center; color: var(--ink-faint); font-style: italic; border: 1px dashed var(--border); border-radius: var(--radius); }
-    
+
     .dl-link { color: var(--brass); text-decoration: none; font-weight: 500; font-size: 12px; display: flex; align-items: center; gap: 4px; }
     .dl-link:hover { text-decoration: underline; }
 
@@ -477,7 +478,7 @@
     .history-empty { text-align: center; color: var(--ink-faint); font-style: italic; padding: 16px !important; }
     .del-x { color: var(--overdue); cursor: pointer; font-weight: bold; text-align: center; font-size: 14px; width: 40px; }
     .del-x:hover { background: #fef2f2; }
-    
+
     .del-btn-icon { color: var(--ink-faint); cursor: pointer; font-size: 16px; font-weight: 500; padding: 2px 6px; border-radius: 4px; transition: all 0.2s; }
     .del-btn-icon:hover { color: var(--overdue); background: #fef2f2; }
 
@@ -489,6 +490,7 @@
 </head>
 <body>
 
+  <!-- Auth Modal -->
   <div class="modal-overlay open" id="authOverlay" style="z-index:999;">
     <div class="modal-container" style="max-width:380px;">
       <div class="modal-header">
@@ -518,6 +520,60 @@
     </div>
   </div>
 
+  <!-- Dynamic NAICS Onboarding Modal -->
+  <div class="modal-overlay" id="naicsOverlay" style="z-index:998;">
+    <div class="modal-container" style="max-width:500px;">
+      <div class="modal-header">
+        <h2>System Initialization</h2>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--ink-dim); margin-bottom: 16px;">Please enter your organization's 6-digit NAICS classification code. We will detect your entity type, which you can confirm or override below.</p>
+        <div class="task-form-grid" style="grid-template-columns: 1fr;">
+
+          <div class="field">
+            <label>6-Digit NAICS Code</label>
+            <input type="text" id="naicsCode" placeholder="e.g. 541511 or 813319">
+            <div id="naicsConfirmMsg" style="font-size: 12px; margin-top: 6px; min-height: 18px;"></div>
+          </div>
+
+          <div class="field">
+            <label>Confirm Organization Structure</label>
+            <select id="orgType">
+              <option value="for-profit">Standard For-Profit Corporation / LLC</option>
+              <option value="non-profit">501(c)(3) Non-Profit Organization</option>
+              <option value="bookr">Bookr Internal Setup</option>
+            </select>
+          </div>
+
+          <button class="btn primary" style="margin-top: 12px;" onclick="submitNaicsOnboarding()">Generate Ledger</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin User Management Modal -->
+  <div class="modal-overlay" id="adminOverlay" style="z-index:997;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Access Control Panel</h2>
+        <button class="btn small" onclick="document.getElementById('adminOverlay').classList.remove('open')">Close</button>
+      </div>
+      <div class="modal-body">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
+              <th style="padding: 8px;">Name</th>
+              <th style="padding: 8px;">Email</th>
+              <th style="padding: 8px;">Current Role</th>
+              <th style="padding: 8px;">Modify Access</th>
+            </tr>
+          </thead>
+          <tbody id="adminUserTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <div class="sidebar">
       <div class="brand-title">Bookr, Inc.</div>
@@ -525,6 +581,7 @@
         <h4>Signed In As</h4>
         <div style="font-size:13px; color:var(--ink-dim); margin-bottom:8px;" id="currentUserLabel">—</div>
         <button class="btn mini" id="logoutBtn" style="width:100%;">Log Out</button>
+        <button class="btn mini ghost" id="adminPanelBtn" style="width:100%; margin-top:6px; display:none;">Admin Settings</button>
       </div>
       <div class="sidebar-section">
         <h4>Status Matrix <span style="font-size:10px; opacity:0.6;" id="matrixYearLabel"></span></h4>
@@ -547,7 +604,7 @@
             <h2 id="monthTitle">Corporate Framework View</h2>
           </div>
           <div class="toolbar">
-            
+
             <div class="search-group">
               <select id="quickFilterSelect">
                 <option value="all">All Filters</option>
@@ -713,7 +770,7 @@
   let STATE_LOGS = [];
 
   let state = {
-    currentView: 'list', 
+    currentView: 'list',
     currentYear: 2026,
     currentMonth: 6,
     selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'],
@@ -739,6 +796,7 @@
 
     await loadDatabase();
     buildYearDropdownSelectors();
+    configurePermissions();
 
     if (!appInitialized) {
       appInitialized = true;
@@ -772,8 +830,103 @@
     render();
   }
 
+  // --- Role & Permissions Logic --- //
+  async function configurePermissions() {
+    if (CURRENT_USER && CURRENT_USER.role === 'admin') {
+      document.getElementById('adminPanelBtn').style.display = 'block';
+    } else {
+      document.getElementById('adminPanelBtn').style.display = 'none';
+      // Hide delete buttons for non-admins
+      document.querySelectorAll('.btn-delete').forEach(btn => btn.style.display = 'none');
+    }
+
+    // Prompt NAICS screen if DB is empty and user is admin
+    if (TASKS.length === 0 && CURRENT_USER && CURRENT_USER.role === 'admin') {
+      document.getElementById('naicsOverlay').classList.add('open');
+    }
+  }
+
+  // --- Real-time NAICS auto-detection ---
+  document.getElementById('naicsCode')?.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    const dropdown = document.getElementById('orgType');
+    const msg = document.getElementById('naicsConfirmMsg');
+
+    if (val === '541511') {
+      dropdown.value = 'bookr';
+      msg.innerHTML = '<span style="color: var(--filed); font-weight: 500;">✓ Detected: Bookr Internal Profile. Please confirm below.</span>';
+    } else if (val.startsWith('813')) {
+      dropdown.value = 'non-profit';
+      msg.innerHTML = '<span style="color: var(--soon); font-weight: 500;">✓ Detected: Non-Profit Sector. Please confirm or override below.</span>';
+    } else if (val.length >= 2) {
+      dropdown.value = 'for-profit';
+      msg.innerHTML = '<span style="color: var(--upcoming); font-weight: 500;">✓ Detected: For-Profit Sector. Please confirm or override below.</span>';
+    } else {
+      msg.innerHTML = '';
+    }
+  });
+
+  // --- Submitting the confirmed data ---
+  async function submitNaicsOnboarding() {
+    const naics = document.getElementById('naicsCode').value.trim();
+    const type = document.getElementById('orgType').value;
+
+    if (!naics) {
+      alert("Please enter a valid NAICS code.");
+      return;
+    }
+
+    try {
+      await apiFetch('/system/onboard', {
+        method: 'POST',
+        body: JSON.stringify({ naics_code: naics, org_type: type })
+      });
+      document.getElementById('naicsOverlay').classList.remove('open');
+      await loadDatabase();
+      render();
+    } catch (e) {
+      alert("Error initializing system: " + e.message);
+    }
+  }
+
+  document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
+    try {
+      const users = await apiFetch('/users/');
+      const tbody = document.getElementById('adminUserTable');
+      tbody.innerHTML = '';
+
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.email}</td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">
+            <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin (Full Access)</option>
+              <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Editor (Can Log Tasks)</option>
+              <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Viewer (Read Only)</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('adminOverlay').classList.add('open');
+    } catch(e) { alert("Admin access denied."); }
+  });
+
+  async function updateUserRole(userId, newRole) {
+    try {
+      await apiFetch(`/users/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole })
+      });
+    } catch(e) {
+      alert("Failed to update user role: " + e.message);
+    }
+  }
+
   // Pulls the live task list + compliance log history from the backend API
-  // and normalizes them into the same shape the rest of the UI already expects.
   async function loadDatabase() {
     try {
       const [apiTasks, apiLogs] = await Promise.all([
@@ -831,13 +984,13 @@
   function setupViewToggles() {
     const container = document.querySelector('.view-toggle');
     container.innerHTML = '';
-    
+
     const views = [
       { id: 'list', label: 'List View' },
       { id: 'calendar', label: 'Calendar' },
       { id: 'archive', label: 'History Archive' }
     ];
-    
+
     views.forEach(v => {
       const b = document.createElement('button');
       b.textContent = v.label;
@@ -873,17 +1026,17 @@
     if (logs.length > 0 && logs.some(l => l.action === 'filed')) return 'filed';
     if (task.dueType === 'rolling') return 'needsdate';
 
-    const todayObj = new Date(2026, 6, 13);
-    
+    const todayObj = new Date();
+
     let due;
     if (task.dueType === 'fixed') {
       due = calculateTargetDate(state.currentYear, task.dueMonth, task.dueDay);
     } else {
       due = new Date(state.currentYear, task.dueMonth - 1, task.dueDay);
     }
-    
+
     if (due < todayObj) return 'overdue';
-    
+
     const diffDays = Math.ceil((due - todayObj) / (1000 * 60 * 60 * 24));
     if (diffDays <= 7) return 'soon';
     if (diffDays <= 14) return 'soon';
@@ -906,7 +1059,7 @@
   function getIconForStatus(status) {
     const colors = { overdue: 'var(--overdue)', soon: 'var(--soon)', month: 'var(--month)', filed: 'var(--filed)', upcoming: 'var(--upcoming)', needsdate: 'var(--needsdate)' };
     const color = colors[status] || 'var(--ink-faint)';
-    
+
     if(status === 'filed') {
       return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M7 12l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
     } else if(status === 'overdue' || status === 'soon') {
@@ -924,7 +1077,7 @@
       const status = getTaskStatus(t);
       if (!state.selectedStatuses.includes(status)) return false;
 
-      const todayObj = new Date(2026, 6, 13);
+      const todayObj = new Date();
       let diffDays = Infinity;
       if (t.dueType === 'fixed') {
         const due = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
@@ -936,11 +1089,11 @@
       if (state.quickFilter === 'de' && t.scope !== 'Delaware') return false;
       if (state.quickFilter === 'intl' && t.scope !== 'Internal') return false;
       if (state.quickFilter === 'ins' && t.scope !== 'Insurance') return false;
-      
+
       if (state.quickFilter === '1w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 7 && status !== 'filed'))) return false;
       if (state.quickFilter === '2w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 14 && status !== 'filed'))) return false;
       if (state.quickFilter === '1m' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 30 && status !== 'filed'))) return false;
-      
+
       if (state.quickFilter === 'overdue_q' && status !== 'overdue') return false;
       if (state.quickFilter === 'filed_q' && status !== 'filed') return false;
 
@@ -961,7 +1114,7 @@
     const title = document.getElementById('monthTitle');
     const navControls = document.getElementById('calNavCluster');
     const workspace = document.getElementById('mainContent');
-    
+
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
     if (state.currentView === 'calendar') {
@@ -1064,13 +1217,13 @@
       `;
 
       const cardsContainer = laneDiv.querySelector(`#lane-cards-${sec.id}`);
-      
+
       if (sec.id === 'ROLL' || sec.id === 'INS') {
         laneTasks.forEach(t => cardsContainer.appendChild(renderTaskCard(t)));
       } else {
         const sortedTasks = [...laneTasks].sort((a,b) => (a.dueMonth * 100 + a.dueDay) - (b.dueMonth * 100 + b.dueDay));
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        
+
         let currentMonth = -1;
         sortedTasks.forEach(t => {
           if (t.dueMonth !== currentMonth) {
@@ -1114,7 +1267,7 @@
     }
 
     const currentTasks = getFilteredTasks().filter(t => t.dueType === 'fixed' && t.dueMonth === (state.currentMonth + 1));
-    const todayObj = new Date(2026, 6, 13);
+    const todayObj = new Date();
 
     for (let day = 1; day <= totalDays; day++) {
       const cell = document.createElement('div');
@@ -1124,7 +1277,7 @@
       }
 
       let inner = `<div class="daynum">${day}</div>`;
-      
+
       currentTasks.forEach(t => {
         const calculatedDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
         if (calculatedDate.getDate() === day && calculatedDate.getMonth() === state.currentMonth) {
@@ -1178,7 +1331,7 @@
       const parentTask = TASKS.find(t => t.id === l.taskId) || { short: 'Deleted Module', title: l.taskId };
       const dlButton = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'compliance_doc'}" class="dl-link">Local File</a>` : '';
       const cloudButton = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud Link</a>` : '';
-      
+
       const card = document.createElement('div');
       card.className = 'history-archive-card';
       card.innerHTML = `
@@ -1188,17 +1341,18 @@
           <p>${parentTask.title}</p>
           <div class="note">Executed Date: <strong>${l.date}</strong> ${l.note ? `| Ref: <em>${l.note}</em>` : ''}</div>
         </div>
-        <div class="cycle">Cycle ${l.fiscalYear || '2026'}</div>
+        <div class="cycle">Cycle ${l.fiscalYear || state.currentYear}</div>
         <div class="actions">
           ${cloudButton}
           ${dlButton}
-          <span class="del-btn-icon" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</span>
+          <span class="del-btn-icon btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</span>
         </div>
       `;
       stackContainer.appendChild(card);
     });
 
     container.appendChild(stackContainer);
+    configurePermissions();
   }
 
   async function deleteTask(taskId) {
@@ -1215,16 +1369,16 @@
     const div = document.createElement('div');
     div.className = 'task-card';
     div.id = `card-${t.id}`;
-    
+
     const status = getTaskStatus(t);
-    
-    let displayDateText = t.dueText; 
+
+    let displayDateText = t.dueText;
     if (t.dueType === 'fixed') {
       const exactDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
-      displayDateText = exactDate.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+      displayDateText = exactDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
       });
     } else if (t.dueType === 'rolling') {
       displayDateText = `${t.dueText} (Target: FY ${state.currentYear})`;
@@ -1282,7 +1436,7 @@
             </div>
             <div class="field">
               <label>Date Executed</label>
-              <input type="date" id="date-${t.id}" value="2026-07-13">
+              <input type="date" id="date-${t.id}">
             </div>
             <div class="field">
               <label>Cloud Link (Google Drive / OneDrive)</label>
@@ -1320,6 +1474,13 @@
         </div>
       </div>
     `;
+
+    // Quick default date setup
+    const dateInput = div.querySelector(`#date-${t.id}`);
+    if (dateInput) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
     return div;
   }
 
@@ -1343,7 +1504,7 @@
       const tr = document.createElement('tr');
       const dlLink = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'proof'}" class="dl-link">File</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
       const cloudLink = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
-      
+
       tr.innerHTML = `
         <td>${l.timestamp}</td>
         <td><span class="status-label ${l.action}">${l.action.toUpperCase()}</span></td>
@@ -1351,10 +1512,11 @@
         <td>${l.date}</td>
         <td>${cloudLink}</td>
         <td>${dlLink}</td>
-        <td class="del-x" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>
+        <td class="del-x btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>
       `;
       tbody.appendChild(tr);
     });
+    configurePermissions();
   }
 
   async function submitExecutionFormInline(id) {
@@ -1448,7 +1610,7 @@
       <div style="font-size: 15px; margin-bottom: 24px; color: var(--ink-dim);">
         Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.
       </div>
-      
+
       <div class="task-form-three-col" style="margin-bottom: 32px;">
         <div class="report-stat-box">
           <h4>Executed Forms</h4>
@@ -1467,7 +1629,7 @@
 
     if(overdue.length > 0 || soon.length > 0 || month.length > 0) {
       html += `<div class="quarter-lane-title"><span>Priority Pipeline Items</span></div><div style="display:flex; flex-direction:column; gap:12px;">`;
-      
+
       [...overdue, ...soon, ...month].forEach(t => {
         const s = getTaskStatus(t);
         html += `
@@ -1498,7 +1660,7 @@
         <div class="task-form-grid">
           <div class="field"><label>Milestone Short Token (e.g. Form SI-550)</label><input type="text" id="newShort" placeholder="e.g. Form SI-550" required></div>
           <div class="field"><label>Full Statutory Title</label><input type="text" id="newTitle" placeholder="e.g. Statement of Information" required></div>
-          
+
           <div class="full-width task-form-three-col">
             <div class="field">
               <label>Jurisdiction Scope</label>
@@ -1534,14 +1696,14 @@
           </div>
 
           <div class="full-width field"><label>Target Fiscal Year Creation</label><input type="number" id="newTargetYear" value="${state.currentYear}"></div>
-          
+
           <div class="full-width field"><label>Corporate Entity Target Assignment</label><input type="text" id="newEntity" value="Bookr, Inc."></div>
-          
+
           <div class="field"><label>Portal Identity Name</label><input type="text" id="newPortalName" placeholder="e.g. CA SoS bizfile"></div>
           <div class="field"><label>Portal Endpoint URL</label><input type="url" id="newPortalUrl" placeholder="https://..."></div>
-          
+
           <div class="full-width field"><label>Scope Operational Instructions</label><textarea id="newInfo" rows="3" placeholder="Input legal data directives..."></textarea></div>
-          
+
           <div class="full-width" style="display:flex; justify-content:flex-end; gap:12px; margin-top:12px; border-top: 1px solid var(--border); padding-top: 16px;">
             <button class="btn" type="button" onclick="closeModalWindow()">Cancel Process</button>
             <button class="btn primary" type="button" onclick="commitCustomMilestoneObject()">Save Framework Milestone</button>
@@ -1615,17 +1777,19 @@
     body.innerHTML = '';
     body.appendChild(renderTaskCard(task));
     document.getElementById('modalOverlay').classList.add('open');
+    configurePermissions();
   }
 
   function rebuildModalActiveDayMarkup() {
     const matches = getFilteredTasks().filter(t => t.dueType === 'fixed' && t.dueMonth === (state.currentMonth + 1));
     const dayMatches = matches.filter(t => calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay).getDate() === activeModalDay);
-    
+
     const body = document.getElementById('modalBody');
     if (body) {
       body.innerHTML = dayMatches.length === 0 ? `<div class="modal-empty">No standard filing items registered on this calendar index block.</div>` : '';
       dayMatches.forEach(t => body.appendChild(renderTaskCard(t)));
     }
+    configurePermissions();
   }
 
   function closeModalWindow() { document.getElementById('modalOverlay').classList.remove('open'); activeModalDay = null; }
