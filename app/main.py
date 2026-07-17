@@ -138,12 +138,13 @@ async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get
 
     tasks_to_seed = []
 
-    # 2. Logic router based on NAICS & Type
-    if payload.naics_code == "541511":
+    # 2. Logic Router based on the user's confirmed dropdown choice
+    if payload.org_type == "bookr" or payload.naics_code == "541511":
         # Bookr's specific profile
         tasks_to_seed = CORE_TASKS
+
     elif payload.org_type == "non-profit":
-        # Generic Non-Profit Framework
+        # Non-Profit Framework
         tasks_to_seed = [
             {"key": "990", "is_core": True, "deleted": False, "num": 1, "quarter": "Q2", "scope": "Federal",
              "short": "Form 990", "title": "Return of Organization Exempt from Income Tax", "due_type": "fixed",
@@ -154,8 +155,9 @@ async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get
              "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
              "info": "Required to legally ask for donations in the state."},
         ]
+
     else:
-        # Generic For-Profit Framework
+        # Standard For-Profit Framework
         tasks_to_seed = [
             {"key": "1120", "is_core": True, "deleted": False, "num": 1, "quarter": "Q1", "scope": "Federal",
              "short": "Form 1120", "title": "U.S. Corporation Income Tax Return", "due_type": "fixed", "due_month": 4,
@@ -171,7 +173,6 @@ async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get
 
     await db.commit()
     return {"status": "success", "seeded": len(tasks_to_seed)}
-
 
 # Tasks & Logs (Protected by Editor/Admin roles)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
