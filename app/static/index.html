@@ -901,12 +901,13 @@
           <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}</td>
           <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.email}</td>
           <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
             <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
               <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin (Full Access)</option>
               <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Editor (Can Log Tasks)</option>
               <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Viewer (Read Only)</option>
             </select>
+            ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
           </td>
         `;
         tbody.appendChild(tr);
@@ -921,8 +922,21 @@
         method: 'PATCH',
         body: JSON.stringify({ role: newRole })
       });
+      document.getElementById('adminPanelBtn').click(); // Refresh to update button visibility
     } catch(e) {
       alert("Failed to update user role: " + e.message);
+    }
+  }
+
+  async function deleteUser(userId) {
+    if (confirm("Are you sure you want to permanently delete this user account?")) {
+      try {
+        await apiFetch(`/users/${userId}`, { method: 'DELETE' });
+        // Automatically click the admin button again to refresh the table
+        document.getElementById('adminPanelBtn').click();
+      } catch(e) {
+        alert("Failed to delete user: " + e.message);
+      }
     }
   }
 

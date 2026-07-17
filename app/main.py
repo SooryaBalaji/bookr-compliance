@@ -123,6 +123,28 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
     await db.commit()
     return {"status": "success", "role": user.role}
 
+
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
+                      admin: models.User = Depends(get_current_admin)):
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own admin account.")
+
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # NEW STRICT SAFETY CHECK: Admins cannot delete other admins
+    if user.role == "admin":
+        raise HTTPException(status_code=403,
+                            detail="Security Violation: Admins are not permitted to delete other Admin accounts.")
+
+    await db.delete(user)
+    await db.commit()
+    return {"status": "success", "message": "User deleted"}
+
 # NAICS Onboarding Engine
 
 class OnboardPayload(BaseModel):
