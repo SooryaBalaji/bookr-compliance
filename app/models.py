@@ -16,6 +16,23 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class OrgSettings(Base):
+    """
+    Singleton row (id is always 1) holding the org-wide NAICS classification
+    chosen during onboarding. Used so the app remembers which task template
+    (Bookr / non-profit / for-profit) is active and can show/re-run it later.
+    """
+    __tablename__ = "org_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    naics_code = Column(String, nullable=False)
+    org_type = Column(String, nullable=False)  # 'bookr' | 'non-profit' | 'for-profit'
+    detected_type = Column(String, nullable=True)  # what the server inferred from naics_code alone
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+
 class Task(Base):
     """
     A single compliance milestone/filing. This covers both the ~32 seeded

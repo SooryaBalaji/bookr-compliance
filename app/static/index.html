@@ -527,12 +527,12 @@
         <h2>System Initialization</h2>
       </div>
       <div class="modal-body">
-        <p style="font-size: 13px; color: var(--ink-dim); margin-bottom: 16px;">Please enter your organization's 6-digit NAICS classification code. We will detect your entity type, which you can confirm or override below.</p>
+        <p style="font-size: 13px; color: var(--ink-dim); margin-bottom: 16px;">Enter your organization's 6-digit NAICS classification code. We'll detect your entity type — Bookr internal, non-profit, or for-profit — and load the matching standard compliance checklist. You can confirm or override the detected type below.</p>
         <div class="task-form-grid" style="grid-template-columns: 1fr;">
 
           <div class="field">
             <label>6-Digit NAICS Code</label>
-            <input type="text" id="naicsCode" placeholder="e.g. 541511 or 813319">
+            <input type="text" id="naicsCode" placeholder="e.g. 541511 or 813319" maxlength="6" inputmode="numeric">
             <div id="naicsConfirmMsg" style="font-size: 12px; margin-top: 6px; min-height: 18px;"></div>
           </div>
 
@@ -559,6 +559,22 @@
         <button class="btn small" onclick="document.getElementById('adminOverlay').classList.remove('open')">Close</button>
       </div>
       <div class="modal-body">
+        <div style="border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px; margin-bottom: 16px; background: var(--surface2);">
+          <h4 style="margin: 0 0 10px 0; font-size: 13px;">Add New Member</h4>
+          <div id="addMemberError" style="display:none; color: var(--filed); font-size: 12px; margin-bottom: 8px;"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <input type="text" id="newMemberName" placeholder="Full name" style="padding:6px; font-size:12px;">
+            <input type="email" id="newMemberEmail" placeholder="Email address" style="padding:6px; font-size:12px;">
+            <input type="password" id="newMemberPassword" placeholder="Temporary password (min 8 chars)" style="padding:6px; font-size:12px;">
+            <select id="newMemberRole" style="padding:6px; font-size:12px;">
+              <option value="member_read">Viewer (Read Only)</option>
+              <option value="member_edit">Editor (Can Log Tasks)</option>
+              <option value="admin">Co-Admin (Full Access)</option>
+            </select>
+          </div>
+          <button class="btn small primary" style="margin-top: 10px;" onclick="addNewMember()">Create Account</button>
+        </div>
+
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
@@ -570,6 +586,8 @@
           </thead>
           <tbody id="adminUserTable"></tbody>
         </table>
+
+        <button class="btn small ghost" style="margin-top: 16px; width: 100%;" onclick="reopenNaicsOnboarding()">Reclassify Organization (NAICS)</button>
       </div>
     </div>
   </div>
@@ -855,24 +873,32 @@
     }
   }
 
-  // --- Real-time NAICS auto-detection ---
+  // --- Real-time NAICS auto-detection (mirrors the server's classify_naics logic) ---
+  function detectOrgTypeFromNaics(val) {
+    if (val === '541511') return 'bookr';
+    if (val.startsWith('813')) return 'non-profit';
+    return 'for-profit';
+  }
+
   document.getElementById('naicsCode')?.addEventListener('input', (e) => {
     const val = e.target.value.trim();
     const dropdown = document.getElementById('orgType');
     const msg = document.getElementById('naicsConfirmMsg');
 
-    if (val === '541511') {
-      dropdown.value = 'bookr';
-      msg.innerHTML = '<span style="color: var(--filed); font-weight: 500;">✓ Detected: Bookr Internal Profile. Please confirm below.</span>';
-    } else if (val.startsWith('813')) {
-      dropdown.value = 'non-profit';
-      msg.innerHTML = '<span style="color: var(--soon); font-weight: 500;">✓ Detected: Non-Profit Sector. Please confirm or override below.</span>';
-    } else if (val.length >= 2) {
-      dropdown.value = 'for-profit';
-      msg.innerHTML = '<span style="color: var(--upcoming); font-weight: 500;">✓ Detected: For-Profit Sector. Please confirm or override below.</span>';
-    } else {
-      msg.innerHTML = '';
+    if (!/^\d{1,6}$/.test(val)) {
+      msg.innerHTML = val ? '<span style="color: var(--filed); font-weight: 500;">NAICS codes are numeric only.</span>' : '';
+      return;
     }
+
+    if (val.length < 6) {
+      msg.innerHTML = '<span style="color: var(--ink-dim);">Keep typing — NAICS codes are 6 digits.</span>';
+      return;
+    }
+
+    const detected = detectOrgTypeFromNaics(val);
+    dropdown.value = detected;
+    const labels = { bookr: 'Bookr Internal Setup', 'non-profit': 'Non-Profit Sector (501(c)(3))', 'for-profit': 'For-Profit Sector' };
+    msg.innerHTML = `<span style="color: var(--filed); font-weight: 500;">✓ Detected: ${labels[detected]}. Confirm or override below.</span>`;
   });
 
   // --- Submitting the confirmed data ---
@@ -880,48 +906,65 @@
     const naics = document.getElementById('naicsCode').value.trim();
     const type = document.getElementById('orgType').value;
 
-    if (!naics) {
-      alert("Please enter a valid NAICS code.");
+    if (!/^\d{6}$/.test(naics)) {
+      alert("Please enter a valid 6-digit NAICS code.");
+      return;
+    }
+
+    if (TASKS.length > 0 && !confirm("This will replace the current compliance checklist and any logged history against it. Continue?")) {
       return;
     }
 
     try {
-      await apiFetch('/system/onboard', {
+      const result = await apiFetch('/system/onboard', {
         method: 'POST',
         body: JSON.stringify({ naics_code: naics, org_type: type })
       });
       document.getElementById('naicsOverlay').classList.remove('open');
       await loadDatabase();
       render();
+      const labels = { bookr: 'Bookr Internal', 'non-profit': 'Non-Profit', 'for-profit': 'For-Profit' };
+      alert(`Ledger generated: ${result.seeded} tasks loaded for classification "${labels[result.org_type] || result.org_type}".`);
     } catch (e) {
       alert("Error initializing system: " + e.message);
     }
   }
 
+  // Lets an admin re-run classification later (e.g. the org's NAICS code
+  // changes) instead of only being prompted once when the task list is empty.
+  function reopenNaicsOnboarding() {
+    document.getElementById('adminOverlay').classList.remove('open');
+    document.getElementById('naicsOverlay').classList.add('open');
+  }
+
+  async function refreshAdminPanel() {
+    const users = await apiFetch('/users/');
+    const tbody = document.getElementById('adminUserTable');
+    tbody.innerHTML = '';
+
+    users.forEach(u => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.email}</td>
+        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
+          <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin (Full Access)</option>
+            <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Editor (Can Log Tasks)</option>
+            <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Viewer (Read Only)</option>
+          </select>
+          ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('adminOverlay').classList.add('open');
+  }
+
   document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
     try {
-      const users = await apiFetch('/users/');
-      const tbody = document.getElementById('adminUserTable');
-      tbody.innerHTML = '';
-
-      users.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}</td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.email}</td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
-            <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin (Full Access)</option>
-              <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Editor (Can Log Tasks)</option>
-              <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Viewer (Read Only)</option>
-            </select>
-            ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.getElementById('adminOverlay').classList.add('open');
+      await refreshAdminPanel();
     } catch(e) { alert("Admin access denied."); }
   });
 
@@ -931,7 +974,7 @@
         method: 'PATCH',
         body: JSON.stringify({ role: newRole })
       });
-      document.getElementById('adminPanelBtn').click(); // Refresh to update button visibility
+      await refreshAdminPanel(); // Refresh to update button visibility
     } catch(e) {
       alert("Failed to update user role: " + e.message);
     }
@@ -941,11 +984,46 @@
     if (confirm("Are you sure you want to permanently delete this user account?")) {
       try {
         await apiFetch(`/users/${userId}`, { method: 'DELETE' });
-        // Automatically click the admin button again to refresh the table
-        document.getElementById('adminPanelBtn').click();
+        await refreshAdminPanel();
       } catch(e) {
         alert("Failed to delete user: " + e.message);
       }
+    }
+  }
+
+  async function addNewMember() {
+    const errBox = document.getElementById('addMemberError');
+    errBox.style.display = 'none';
+
+    const full_name = document.getElementById('newMemberName').value.trim();
+    const email = document.getElementById('newMemberEmail').value.trim();
+    const password = document.getElementById('newMemberPassword').value;
+    const role = document.getElementById('newMemberRole').value;
+
+    if (!email || !password) {
+      errBox.textContent = 'Email and a temporary password are required.';
+      errBox.style.display = 'block';
+      return;
+    }
+    if (password.length < 8) {
+      errBox.textContent = 'Password must be at least 8 characters.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    try {
+      await apiFetch('/users/', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, full_name: full_name || null, role })
+      });
+      document.getElementById('newMemberName').value = '';
+      document.getElementById('newMemberEmail').value = '';
+      document.getElementById('newMemberPassword').value = '';
+      document.getElementById('newMemberRole').value = 'member_read';
+      await refreshAdminPanel();
+    } catch (e) {
+      errBox.textContent = e.message || 'Failed to create account.';
+      errBox.style.display = 'block';
     }
   }
 
