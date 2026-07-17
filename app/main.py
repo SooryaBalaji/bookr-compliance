@@ -9,6 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 
 from app.database import engine, Base, get_db
 from app import models, schemas
@@ -21,35 +22,15 @@ from app.auth import (
 from app.seed_data import CORE_TASKS
 
 
-async def seed_core_tasks(db: AsyncSession):
-    """Idempotently insert the ~32 built-in filings on first boot.
-    Safe to call on every startup: existing rows (matched by `key`) are left alone."""
-    result = await db.execute(select(models.Task.key).where(models.Task.is_core == True))  # noqa: E712
-    existing_keys = {row[0] for row in result.all()}
-
-    for t in CORE_TASKS:
-        if t["key"] in existing_keys:
-            continue
-        db.add(models.Task(is_core=True, deleted=False, **t))
-    await db.commit()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    async with AsyncSession(engine, expire_on_commit=False) as session:
-        await seed_core_tasks(session)
     yield
     await engine.dispose()
 
 
-app = FastAPI(
-    title="Bookr Compliance API",
-    description="Regulatory compliance and automated corporate filing tracker",
-    version="2.0.0",
-    lifespan=lifespan,
-)
+app = FastAPI(title="Bookr Compliance API", version="2.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,47 +47,43 @@ if os.path.exists(STATIC_DIR):
 
 @app.get("/")
 async def serve_dashboard():
-    index_path = os.path.join(STATIC_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"message": "API is live, but index.html was not found in app/static."}
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+# RBAC Dependencies
+async def get_current_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user
 
 
-@app.get("/health")
-async def health_check(db: AsyncSession = Depends(get_db)):
-    try:
-        await db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
-    except Exception:
-        raise HTTPException(status_code=503, detail="Database unavailable, please check back later")
+async def get_current_editor(current_user: models.User = Depends(get_current_user)):
+    if current_user.role not in ["admin", "member_edit"]:
+        raise HTTPException(status_code=403, detail="Editor privileges required")
+    return current_user
 
 
 # ---------------------------------------------------------------------------
-# Auth
+# Auth & User Management (The CEO's Admin Panel)
 # ---------------------------------------------------------------------------
-
 @app.post("/auth/register", response_model=schemas.Token)
 async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="An account with that email already exists")
+        raise HTTPException(status_code=400, detail="Email already exists")
 
-    # The very first person to register becomes admin; everyone after is a regular member.
     count_result = await db.execute(select(models.User.id))
-    is_first_user = len(count_result.all()) == 0
+    is_first = len(count_result.all()) == 0
 
     user = models.User(
         email=payload.email,
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
-        role="admin" if is_first_user else "member",
+        role="admin" if is_first else "member_read",  # Default new signups to read-only
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
-
-    token = create_access_token(subject=user.email)
-    return schemas.Token(access_token=token, user=user)
+    return schemas.Token(access_token=create_access_token(subject=user.email), user=user)
 
 
 @app.post("/auth/login", response_model=schemas.Token)
@@ -114,13 +91,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     result = await db.execute(select(models.User).where(models.User.email == form_data.username))
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    token = create_access_token(subject=user.email)
-    return schemas.Token(access_token=token, user=user)
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    return schemas.Token(access_token=create_access_token(subject=user.email), user=user)
 
 
 @app.get("/auth/me", response_model=schemas.UserResponse)
@@ -128,37 +100,95 @@ async def read_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
 
-# ---------------------------------------------------------------------------
-# Tasks
-# ---------------------------------------------------------------------------
+@app.get("/users/", response_model=List[schemas.UserResponse])
+async def list_users(db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
+    result = await db.execute(select(models.User))
+    return result.scalars().all()
 
+
+class RoleUpdate(BaseModel):
+    role: str
+
+
+@app.patch("/users/{user_id}/role")
+async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession = Depends(get_db),
+                           admin: models.User = Depends(get_current_admin)):
+    if payload.role not in ["admin", "member_edit", "member_read"]:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.role = payload.role
+    await db.commit()
+    return {"status": "success", "role": user.role}
+
+# NAICS Onboarding Engine
+
+class OnboardPayload(BaseModel):
+    naics_code: str
+    org_type: str
+
+
+@app.post("/system/onboard")
+async def system_onboard(payload: OnboardPayload, db: AsyncSession = Depends(get_db),
+                         admin: models.User = Depends(get_current_admin)):
+    # 1. Clear existing tasks for the fresh start
+    await db.execute(text("DELETE FROM tasks"))
+
+    tasks_to_seed = []
+
+    # 2. Logic router based on NAICS & Type
+    if payload.naics_code == "541511":
+        # Bookr's specific profile
+        tasks_to_seed = CORE_TASKS
+    elif payload.org_type == "non-profit":
+        # Generic Non-Profit Framework
+        tasks_to_seed = [
+            {"key": "990", "is_core": True, "deleted": False, "num": 1, "quarter": "Q2", "scope": "Federal",
+             "short": "Form 990", "title": "Return of Organization Exempt from Income Tax", "due_type": "fixed",
+             "due_month": 5, "due_day": 15, "due_text": "May 15", "entity": "Generic Org",
+             "info": "Annual IRS filing for tax-exempt organizations."},
+            {"key": "charity", "is_core": True, "deleted": False, "num": 2, "quarter": "ROLL", "scope": "State",
+             "short": "AG Reg", "title": "Attorney General Charitable Solicitation", "due_type": "rolling",
+             "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
+             "info": "Required to legally ask for donations in the state."},
+        ]
+    else:
+        # Generic For-Profit Framework
+        tasks_to_seed = [
+            {"key": "1120", "is_core": True, "deleted": False, "num": 1, "quarter": "Q1", "scope": "Federal",
+             "short": "Form 1120", "title": "U.S. Corporation Income Tax Return", "due_type": "fixed", "due_month": 4,
+             "due_day": 15, "due_text": "April 15", "entity": "Generic Org", "info": "Standard corporate tax return."},
+            {"key": "soi", "is_core": True, "deleted": False, "num": 2, "quarter": "ROLL", "scope": "State",
+             "short": "State AR", "title": "Annual Report / Statement of Information", "due_type": "rolling",
+             "due_month": None, "due_day": None, "due_text": "Annually", "entity": "Generic Org",
+             "info": "State required business entity renewal."},
+        ]
+
+    for t in tasks_to_seed:
+        db.add(models.Task(**t))
+
+    await db.commit()
+    return {"status": "success", "seeded": len(tasks_to_seed)}
+
+
+# Tasks & Logs (Protected by Editor/Admin roles)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
-async def list_tasks(
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    result = await db.execute(select(models.Task).where(models.Task.deleted == False))  # noqa: E712
+async def list_tasks(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    result = await db.execute(select(models.Task).where(models.Task.deleted == False))
     return result.scalars().all()
 
 
 @app.post("/tasks/", response_model=schemas.TaskResponse)
-async def create_task(
-    payload: schemas.TaskCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
+async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(get_db),
+                      editor: models.User = Depends(get_current_editor)):
     key = f"cust_{int(__import__('time').time() * 1000)}"
     count_result = await db.execute(select(models.Task.id))
     next_num = len(count_result.all()) + 1
 
-    task = models.Task(
-        key=key,
-        is_core=False,
-        deleted=False,
-        num=next_num,
-        created_by=current_user.id,
-        **payload.model_dump(),
-    )
+    task = models.Task(key=key, is_core=False, deleted=False, num=next_num, created_by=editor.id,
+                       **payload.model_dump())
     db.add(task)
     await db.commit()
     await db.refresh(task)
@@ -166,58 +196,33 @@ async def create_task(
 
 
 @app.delete("/tasks/{task_id}")
-async def delete_task(
-    task_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
+async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
+                      admin: models.User = Depends(get_current_admin)):
     result = await db.execute(select(models.Task).where(models.Task.id == task_id))
     task = result.scalar_one_or_none()
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
+    if task:
+        task.deleted = True
+        log_result = await db.execute(select(models.ComplianceLog).where(models.ComplianceLog.task_id == task_id))
+        for log in log_result.scalars().all():
+            await db.delete(log)
+        await db.commit()
+    return {"status": "success"}
 
-    # Soft delete so core seed rows and audit history survive; also drop its logs,
-    # matching the original app's "permanently delete" behavior.
-    task.deleted = True
-    log_result = await db.execute(select(models.ComplianceLog).where(models.ComplianceLog.task_id == task_id))
-    for log in log_result.scalars().all():
-        await db.delete(log)
-    await db.commit()
-    return {"status": "success", "message": "Task deleted"}
-
-
-# ---------------------------------------------------------------------------
-# Compliance logs
-# ---------------------------------------------------------------------------
 
 @app.get("/logs/", response_model=List[schemas.LogResponse])
-async def list_logs(
-    task_id: Optional[int] = None,
-    fiscal_year: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
+async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
+                    db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     query = select(models.ComplianceLog)
-    if task_id is not None:
-        query = query.where(models.ComplianceLog.task_id == task_id)
-    if fiscal_year is not None:
-        query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
-    query = query.order_by(models.ComplianceLog.timestamp.asc())
-    result = await db.execute(query)
+    if task_id: query = query.where(models.ComplianceLog.task_id == task_id)
+    if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
+    result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()))
     return result.scalars().all()
 
 
 @app.post("/logs/", response_model=schemas.LogResponse)
-async def create_log(
-    payload: schemas.LogCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    task_result = await db.execute(select(models.Task).where(models.Task.id == payload.task_id))
-    if task_result.scalar_one_or_none() is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-
-    log = models.ComplianceLog(actor_id=current_user.id, **payload.model_dump())
+async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_db),
+                     editor: models.User = Depends(get_current_editor)):
+    log = models.ComplianceLog(actor_id=editor.id, **payload.model_dump())
     db.add(log)
     await db.commit()
     await db.refresh(log)
@@ -225,37 +230,9 @@ async def create_log(
 
 
 @app.delete("/logs/{log_id}")
-async def delete_log(
-    log_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
+async def delete_log(log_id: int, db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
     result = await db.execute(select(models.ComplianceLog).where(models.ComplianceLog.id == log_id))
-    log = result.scalar_one_or_none()
-    if log is None:
-        raise HTTPException(status_code=404, detail="Log entry not found")
-    await db.delete(log)
-    await db.commit()
-    return {"status": "success"}
-
-
-@app.delete("/logs/")
-async def bulk_delete_logs(
-    task_id: Optional[int] = None,
-    fiscal_year: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Powers 'Reset current year to pending', 'Wipe history for this task',
-    and 'Clear entire audit registry' from the UI."""
-    query = select(models.ComplianceLog)
-    if task_id is not None:
-        query = query.where(models.ComplianceLog.task_id == task_id)
-    if fiscal_year is not None:
-        query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
-    result = await db.execute(query)
-    logs = result.scalars().all()
-    for log in logs:
+    if log := result.scalar_one_or_none():
         await db.delete(log)
-    await db.commit()
-    return {"status": "success", "deleted": len(logs)}
+        await db.commit()
+    return {"status": "success"}
