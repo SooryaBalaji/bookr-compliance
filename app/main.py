@@ -309,11 +309,10 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
 
     return {"status": "success", "message": "User assigned to entity successfully."}
 
-
 @app.delete("/entities/{entity_id}/assign/{user_id}")
 async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
                                  current_admin: models.User = Depends(get_current_admin)):
-    """Removes a user's access to a specific organization without deleting their account."""
+    #Removes a user's access to a specific organization without deleting their account 
     existing = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == user_id, models.EntityMember.entity_id == entity_id
     ))
@@ -338,7 +337,6 @@ async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
     await db.commit()
     return {"status": "success", "message": "Entity and associated records purged."}
 
-
 @app.get("/entities/", response_model=List[schemas.EntityResponse])
 async def list_entities(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
     res = await db.execute(select(models.Entity))
@@ -347,13 +345,12 @@ async def list_entities(db: AsyncSession = Depends(get_db), current_admin: model
 
 @app.get("/memberships/")
 async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
-    """Returns all user-entity assignments to build the Admin mapping table."""
+    #Returns all user-entity assignments to build the Admin mapping table
     res = await db.execute(select(models.EntityMember))
     memberships = res.scalars().all()
 
     # Returns a simple list of dicts for the frontend to parse
     return [{"id": m.id, "user_id": m.user_id, "entity_id": m.entity_id} for m in memberships]
-
 
 # Tasks & Logs (Protected)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
@@ -372,7 +369,6 @@ async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depend
     result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
-
 @app.post("/tasks/", response_model=schemas.TaskResponse)
 async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(get_db),
                       editor: models.User = Depends(get_current_editor)):
@@ -389,7 +385,6 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
     await db.refresh(task)
     return task
 
-
 @app.delete("/tasks/{task_id}")
 async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
                       editor: models.User = Depends(get_current_editor)):
@@ -403,7 +398,6 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
             await db.delete(log)
         await db.commit()
     return {"status": "success"}
-
 
 @app.get("/logs/", response_model=List[schemas.LogResponse])
 async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None, skip: int = 0, limit: int = 2000,
@@ -422,7 +416,6 @@ async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = 
     if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
     result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()).offset(skip).limit(limit))
     return result.scalars().all()
-
 
 @app.post("/logs/", response_model=schemas.LogResponse)
 async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_db),
@@ -463,9 +456,7 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
         await db.rollback()
         raise HTTPException(status_code=409,
                             detail="A compliance log for this exact task and fiscal year already exists.")
-
     return log
-
 
 @app.delete("/logs/{log_id}")
 async def delete_log(log_id: int, db: AsyncSession = Depends(get_db),
@@ -479,7 +470,6 @@ async def delete_log(log_id: int, db: AsyncSession = Depends(get_db),
         await db.delete(log)
         await db.commit()
     return {"status": "success"}
-
 
 @app.delete("/logs/")
 async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
@@ -496,14 +486,12 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
     await db.commit()
     return {"status": "success"}
 
-
 @app.get("/auth/is-initialized")
 async def is_initialized(db: AsyncSession = Depends(get_db)):
     # Check if any admin exists in the database
     result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
     admin_exists = result.scalar_one_or_none() is not None
     return {"initialized": admin_exists}
-
 
 @app.patch("/tasks/{task_id}")
 async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
