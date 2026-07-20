@@ -203,7 +203,7 @@
 </head>
 <body>
 
-  <!-- Polished Professional Auth Modal (Registration Loophole Removed) -->
+  <!-- Polished Professional Auth Modal -->
   <div class="modal-overlay open" id="authOverlay" style="z-index:999;">
     <div class="modal-container" style="max-width:400px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
 
@@ -226,7 +226,13 @@
             <input type="password" id="authPassword" placeholder="••••••••" style="padding: 10px; font-size: 14px;">
           </div>
 
-          <button class="btn primary" type="button" id="authSubmitBtn" style="margin-top: 12px; padding: 12px; font-size: 14px; width: 100%;">Sign In</button>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn primary" type="button" id="authSubmitBtn" style="flex: 2; padding: 12px; font-size: 14px;">Sign In</button>
+            <button class="btn ghost" type="button" id="authInitBtn" style="flex: 1; padding: 12px; font-size: 12px; border: 1px dashed var(--border);">Initialize System</button>
+          </div>
+          <div style="text-align: center; font-size: 10px; color: var(--ink-faint); margin-top: -8px;">
+            "Initialize System" is only active during first-time deployment.
+          </div>
         </div>
       </div>
 
@@ -408,12 +414,14 @@
   <script>
   // Auth + API Client
   const API_BASE = '';
-  let AUTH_TOKEN = localStorage.getItem('bookr_token') || null;
   let CURRENT_USER = null;
 
   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
-    if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
+
+    // Explicitly tell the browser to send HTTP-only cookies with the request
+    options.credentials = 'include';
+
     if (options.body && !(options.body instanceof URLSearchParams)) {
       headers['Content-Type'] = 'application/json';
     }
@@ -421,11 +429,9 @@
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
 
     if (res.status === 401) {
-      localStorage.removeItem('bookr_token');
-      AUTH_TOKEN = null;
       CURRENT_USER = null;
       window.location.reload();
-      throw new Error('Database reset detected. Page reloading...');
+      throw new Error('Session expired. Page reloading...');
     }
 
     if (!res.ok) {
@@ -449,11 +455,11 @@
       const body = new URLSearchParams();
       body.set('username', email);
       body.set('password', password);
-      let data = await apiFetch('/auth/login', { method: 'POST', body });
+      // Backend automatically sets the HTTP-only cookie on this response
+      await apiFetch('/auth/login', { method: 'POST', body });
 
-      AUTH_TOKEN = data.access_token;
-      CURRENT_USER = data.user;
-      localStorage.setItem('bookr_token', AUTH_TOKEN);
+      // Fetch user profile immediately after cookie is set
+      CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
     } catch (e) {
@@ -462,7 +468,35 @@
     }
   }
 
-  function logOut() {
+  async function registerFirstAdmin() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errBox = document.getElementById('authError');
+    errBox.style.display = 'none';
+
+    if (!email || !password) {
+      errBox.textContent = 'Email and password are required to initialize the admin account.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    try {
+      await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: email, password: password, full_name: "Master Admin" })
+      });
+
+      // Fetch user profile immediately after cookie is set
+      CURRENT_USER = await apiFetch('/auth/me');
+      hideAuthScreen();
+      await startApp();
+    } catch (e) {
+      errBox.textContent = e.message;
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function logOut() {
     const btn = document.getElementById('logoutBtn');
     const originalText = btn.textContent;
 
@@ -471,10 +505,15 @@
     btn.disabled = true;
     document.body.style.pointerEvents = 'none';
 
+    try {
+      // Hit the backend to instruct the browser to destroy the cookie
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.warn("Logout request failed, but clearing local state anyway.");
+    }
+
     setTimeout(() => {
-      AUTH_TOKEN = null;
       CURRENT_USER = null;
-      localStorage.removeItem('bookr_token');
       TASKS = [];
       STATE_LOGS = [];
       document.getElementById('mainContent').innerHTML = '';
@@ -491,21 +530,18 @@
 
   async function bootAuth() {
     document.getElementById('authSubmitBtn').addEventListener('click', submitAuthForm);
+    document.getElementById('authInitBtn').addEventListener('click', registerFirstAdmin);
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
 
-    if (AUTH_TOKEN) {
-      try {
-        CURRENT_USER = await apiFetch('/auth/me');
-        hideAuthScreen();
-        await startApp();
-        return;
-      } catch (e) {
-        AUTH_TOKEN = null;
-        localStorage.removeItem('bookr_token');
-      }
+    try {
+      // Automatically tests if a valid HTTP-only cookie exists upon loading the page
+      CURRENT_USER = await apiFetch('/auth/me');
+      hideAuthScreen();
+      await startApp();
+    } catch (e) {
+      showAuthScreen();
     }
-    showAuthScreen();
   }
 
   let TASKS = [];
@@ -603,6 +639,28 @@
       } catch (e) { alert("Mapping failed: " + e.message); }
   }
 
+  async function unassignAdminFromEntity(entityId, userId) {
+      if (confirm("Revoke this user's access to the organization?")) {
+          try {
+              await apiFetch(`/entities/${entityId}/assign/${userId}`, { method: 'DELETE' });
+              await refreshAdminPanel();
+              await loadDatabase();
+              render();
+          } catch (e) { alert("Revocation failed: " + e.message); }
+      }
+  }
+
+  async function deleteEntity(entityId) {
+      if (confirm("WARNING: Are you sure you want to permanently delete this organization and ALL associated tasks/logs? This cannot be undone.")) {
+          try {
+              await apiFetch(`/entities/${entityId}`, { method: 'DELETE' });
+              await refreshAdminPanel();
+              await loadDatabase();
+              render();
+          } catch (e) { alert("Deletion failed: " + e.message); }
+      }
+  }
+
   async function refreshAdminPanel() {
       const [users, entities] = await Promise.all([
           apiFetch('/users/'),
@@ -640,7 +698,12 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
               <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${ent.name}</strong><br><span style="font-size:10px; color:var(--ink-dim)">${ent.org_type} - ${ent.incorporation_state}</span></td>
-              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${dropdownHtml}</td>
+              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    ${dropdownHtml}
+                    <button class="btn-delete" style="padding: 4px 8px; font-size: 11px;" onclick="deleteEntity(${ent.id})">Purge Entity</button>
+                </div>
+              </td>
           `;
           mapTbody.appendChild(tr);
       });
