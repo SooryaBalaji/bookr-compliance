@@ -255,7 +255,11 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         naics_code=payload.naics_code
     )
     db.add(entity)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="An organization with this name already exists.")
     await db.refresh(entity)
 
     if payload.creation_template == "bookr":
@@ -312,7 +316,7 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
 @app.delete("/entities/{entity_id}/assign/{user_id}")
 async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
                                  current_admin: models.User = Depends(get_current_admin)):
-    #Removes a user's access to a specific organization without deleting their account 
+    #Removes a user's access to a specific organization without deleting their account
     existing = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == user_id, models.EntityMember.entity_id == entity_id
     ))
@@ -488,18 +492,27 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
 
 @app.get("/auth/is-initialized")
 async def is_initialized(db: AsyncSession = Depends(get_db)):
-    # Check if any admin exists in the database
-    result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
-    admin_exists = result.scalar_one_or_none() is not None
+    # Check if any admin exists in the database.
+    # NOTE: use .first() rather than .scalar_one_or_none() here — this is a
+    # simple existence check, and the app allows more than one super_admin
+    # to exist (via role promotion). scalar_one_or_none() raises
+    # MultipleResultsFound as soon as a second super_admin is created, which
+    # crashes this endpoint with an unhandled 500 (plain-text, not JSON),
+    # surfacing to the frontend as a generic "Request failed" error.
+    result = await db.execute(select(models.User.id).where(models.User.role == "super_admin").limit(1))
+    admin_exists = result.first() is not None
     return {"initialized": admin_exists}
 
 @app.patch("/tasks/{task_id}")
-async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
+async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db),
+                      editor: models.User = Depends(get_current_editor)):
     result = await db.execute(select(models.Task).where(models.Task.id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    await verify_org_access(db, editor, task.entity_id)
 
     task.due_type = update_data.due_type
     task.due_month = update_data.due_month
