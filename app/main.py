@@ -1,13 +1,16 @@
 import os
+import base64
+import uuid
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
 
 from app.database import engine, Base, get_db
@@ -39,14 +42,21 @@ app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
 
+# Mount static frontend
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Mount dynamic uploads directory for Base64 extracted files
+UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
 @app.get("/")
 async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
 
 # RBAC Dependencies & Verification
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):
@@ -72,9 +82,10 @@ async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int)
         raise HTTPException(status_code=403, detail="Cross-organization security violation blocked.")
     return True
 
+
 # Auth & User Management
-@app.post("/auth/register", response_model=schemas.Token)
-async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
+@app.post("/auth/register")
+async def register(payload: schemas.UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
@@ -90,29 +101,82 @@ async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_d
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return schemas.Token(access_token=create_access_token(subject=user.email), user=user)
+
+    token = create_access_token(subject=user.email)
+    response.set_cookie(
+        key="bookr_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 24 * 7 * 60  # 7 days
+    )
+    return {"status": "success", "user": user.email}
 
 
-@app.post("/auth/login", response_model=schemas.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+@app.post("/auth/login")
+async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(),
+                db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.User).where(models.User.email == form_data.username))
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    return schemas.Token(access_token=create_access_token(subject=user.email), user=user)
+
+    token = create_access_token(subject=user.email)
+    response.set_cookie(
+        key="bookr_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 24 * 7 * 60  # 7 days
+    )
+    return {"status": "success", "user": user.email}
+
+
+@app.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="bookr_token", httponly=True, secure=True, samesite="lax")
+    return {"status": "success"}
+
+
+class EmergencyResetPayload(BaseModel):
+    email: str
+    new_password: str
+    master_key: str
+
+
+@app.post("/auth/emergency-reset")
+async def emergency_password_reset(payload: EmergencyResetPayload, db: AsyncSession = Depends(get_db)):
+    expected_key = os.getenv("MASTER_RESET_KEY")
+    if not expected_key or payload.master_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid or disabled master key.")
+
+    result = await db.execute(select(models.User).where(models.User.email == payload.email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+    return {"status": "success", "message": "Password forcefully reset."}
 
 
 @app.get("/auth/me", response_model=schemas.UserResponse)
 async def read_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
+
 @app.get("/users/", response_model=List[schemas.UserResponse])
 async def list_users(db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
     result = await db.execute(select(models.User))
     return result.scalars().all()
 
+
 class RoleUpdate(BaseModel):
     role: str
+
 
 @app.patch("/users/{user_id}/role")
 async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession = Depends(get_db),
@@ -173,6 +237,7 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
     await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
+
 
 # Entity Control & Architecture Core
 @app.post("/entities/", response_model=schemas.EntityResponse)
@@ -242,26 +307,57 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
     return {"status": "success", "message": "User assigned to entity successfully."}
 
 
+@app.delete("/entities/{entity_id}/assign/{user_id}")
+async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
+                                 current_admin: models.User = Depends(get_current_admin)):
+    """Removes a user's access to a specific organization without deleting their account."""
+    existing = await db.execute(select(models.EntityMember).where(
+        models.EntityMember.user_id == user_id, models.EntityMember.entity_id == entity_id
+    ))
+    member_record = existing.scalar_one_or_none()
+    if not member_record:
+        raise HTTPException(status_code=404, detail="User is not assigned to this entity.")
+
+    await db.delete(member_record)
+    await db.commit()
+    return {"status": "success", "message": "Access revoked."}
+
+
+@app.delete("/entities/{entity_id}")
+async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
+                        current_admin: models.User = Depends(get_current_admin)):
+    """Deletes an entity and cascades to remove all associated tasks and logs."""
+    result = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
+    entity = result.scalar_one_or_none()
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found.")
+
+    await db.delete(entity)
+    await db.commit()
+    return {"status": "success", "message": "Entity and associated records purged."}
+
+
 @app.get("/entities/", response_model=List[schemas.EntityResponse])
 async def list_entities(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
     res = await db.execute(select(models.Entity))
     return res.scalars().all()
 
-# Tasks & Logs (Protected)
 
+# Tasks & Logs (Protected)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
-async def list_tasks(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depends(get_db),
+                     current_user: models.User = Depends(get_current_user)):
     if current_user.role == "super_admin":
-        result = await db.execute(select(models.Task).where(models.Task.deleted == False))
+        query = select(models.Task).where(models.Task.deleted == False)
     else:
         mem_res = await db.execute(
             select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
         allowed_entities = mem_res.scalars().all()
         if not allowed_entities:
             return []
-        result = await db.execute(
-            select(models.Task).where(models.Task.deleted == False, models.Task.entity_id.in_(allowed_entities))
-        )
+        query = select(models.Task).where(models.Task.deleted == False, models.Task.entity_id.in_(allowed_entities))
+
+    result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
 
@@ -298,7 +394,7 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
 
 
 @app.get("/logs/", response_model=List[schemas.LogResponse])
-async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
+async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None, skip: int = 0, limit: int = 2000,
                     db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     query = select(models.ComplianceLog).join(models.Task)
 
@@ -312,7 +408,7 @@ async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = 
 
     if task_id: query = query.where(models.ComplianceLog.task_id == task_id)
     if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
-    result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()))
+    result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()).offset(skip).limit(limit))
     return result.scalars().all()
 
 
@@ -326,10 +422,36 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
 
     await verify_org_access(db, editor, task.entity_id)
 
-    log = models.ComplianceLog(actor_id=editor.id, **payload.model_dump())
+    saved_file_path = None
+    if payload.file_data and payload.file_data.startswith("data:"):
+        try:
+            header, encoded = payload.file_data.split(",", 1)
+            file_ext = header.split(";")[0].split("/")[1]
+            file_bytes = base64.b64decode(encoded)
+            filename = f"{uuid.uuid4().hex}.{file_ext}"
+
+            os.makedirs(UPLOADS_DIR, exist_ok=True)
+            saved_file_path = f"/uploads/{filename}"
+
+            with open(os.path.join(UPLOADS_DIR, filename), "wb") as f:
+                f.write(file_bytes)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid base64 file data payload.")
+
+    log_data = payload.model_dump()
+    log_data["file_data"] = saved_file_path
+
+    log = models.ComplianceLog(actor_id=editor.id, **log_data)
     db.add(log)
-    await db.commit()
-    await db.refresh(log)
+
+    try:
+        await db.commit()
+        await db.refresh(log)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409,
+                            detail="A compliance log for this exact task and fiscal year already exists.")
+
     return log
 
 
