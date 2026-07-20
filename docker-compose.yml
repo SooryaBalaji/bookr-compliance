@@ -1,25 +1,27 @@
 version: '3.8'
 
 services:
-  #The Backend
+  # The Backend
   web:
     build: .
     ports:
       - "8000:8000"
     volumes:
       - .:/app
+      # This ensures files uploaded by users are saved to the host machine
+      - ./app/uploads:/app/app/uploads
     environment:
       - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/compliance_db
       - REDIS_URL=redis://cache:6379/0
-      # Change this in any real deployment
-      - SECRET_KEY=${SECRET_KEY:-dev-only-insecure-secret-change-me}
+      - SECRET_KEY=${SECRET_KEY}
+      - MASTER_RESET_KEY=${MASTER_RESET_KEY}
     depends_on:
       db:
-        condition: service_healthy # Wait for DB to be truly ready
+        condition: service_healthy
       cache:
         condition: service_started
 
-  # 2. The Database
+  # The Database
   db:
     image: postgres:16-alpine
     environment:
@@ -29,39 +31,14 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      # This command pings the DB until it responds successfully
       test: ["CMD-SHELL", "pg_isready -U user -d compliance_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 3. The Cache (For high-speed temporary memory)
+  # The Cache
   cache:
     image: redis:7-alpine
 
-  # Only start with `docker-compose --profile test up playwright`
-  playwright:
-    profiles: ["test"]
-    image: mcr.microsoft.com/playwright:v1.44.0-jammy
-    volumes:
-      - ./tests:/tests
-    working_dir: /tests
-    # This command initializes a Node project, installs Playwright, and runs your script
-    command: /bin/bash -c "npm init -y && npm install @playwright/test && npx playwright test api.spec.js"
-    depends_on:
-      - web
-
-  # Only start with `docker-compose --profile test up k6`
-  k6:
-    profiles: ["test"]
-    image: grafana/k6:latest
-    volumes:
-      - ./tests:/tests
-    # Tell k6 to run the load script
-    command: run /tests/load.js
-    depends_on:
-      - web
-
-# This ensures the  database doesn't wipe itself when you turn the server off
 volumes:
   db-data:

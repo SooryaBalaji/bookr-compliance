@@ -134,7 +134,7 @@
     .badge.needsdate, .badge.ROLL { background: var(--needsdate); }
     .badge.INSURANCE { background: #7c3aed; width: auto; padding: 0 8px; }
 
-    .status-label { font-size: 12px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; font-weight: 500; display: inline-block; letter-spacing: 0.02em; }
+    .status-label { font-size: 12px; text-transform: none; font-family: 'IBM Plex Mono', monospace; font-weight: 500; display: inline-block; letter-spacing: 0.02em; }
     .status-label.overdue { color: var(--overdue); }
     .status-label.soon { color: var(--soon); }
     .status-label.month { color: var(--month); }
@@ -430,7 +430,6 @@
 
     if (res.status === 401) {
       CURRENT_USER = null;
-      window.location.reload();
       throw new Error('Session expired. Page reloading...');
     }
 
@@ -468,6 +467,49 @@
     }
   }
 
+  async function openEditTaskModal(taskId) {
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Use the same modal logic as your wizard
+    openAddMilestoneWizard();
+    document.getElementById('modalTitle').textContent = `Edit Milestone: ${task.short}`;
+
+    // Pre-fill the form with existing task data
+    document.getElementById('newShort').value = task.short;
+    document.getElementById('newTitle').value = task.title;
+    document.getElementById('newDueType').value = task.dueType;
+    document.getElementById('newDueMonth').value = task.dueMonth || 1;
+    document.getElementById('newDueDay').value = task.dueDay || 15;
+
+    // Change the "Save" button to run an update instead of creation
+    const saveBtn = document.querySelector('.btn.primary[onclick="commitCustomMilestoneObject()"]');
+    saveBtn.setAttribute('onclick', `commitEditTask(${taskId})`);
+    saveBtn.textContent = 'Save Changes';
+}
+
+  async function commitEditTask(taskId) {
+    const type = document.getElementById('newDueType').value;
+    const m = parseInt(document.getElementById('newDueMonth').value);
+    const d = parseInt(document.getElementById('newDueDay').value);
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const payload = {
+        due_type: type,
+        due_month: type === 'fixed' ? m : null,
+        due_day: type === 'fixed' ? d : null,
+        due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone'
+    };
+
+    try {
+        await apiFetch(`/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+        await loadDatabase();
+        closeModalWindow();
+        render();
+    } catch (e) { alert('Update failed: ' + e.message); }
+  }
+
+
   async function registerFirstAdmin() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -495,6 +537,42 @@
       errBox.style.display = 'block';
     }
   }
+
+  async function assignAdminToEntity(entityId, userId) {
+    if (!userId) return;
+    try {
+        await apiFetch(`/entities/${entityId}/assign`, {
+            method: 'POST',
+            body: JSON.stringify({ admin_id: parseInt(userId) })
+        });
+
+        alert("User successfully assigned to the entity!");
+
+        await refreshAdminPanel();
+        await loadDatabase();
+        render();
+    } catch (e) { alert("Mapping failed: " + e.message); }
+  }
+
+  async function checkSystemStatus() {
+    try {
+        const status = await apiFetch('/auth/is-initialized');
+        const initBtn = document.getElementById('authInitBtn');
+        const signInBtn = document.getElementById('authSubmitBtn');
+
+        if (status.initialized) {
+            // System is already set up: Hide Init, Show Sign In
+            initBtn.style.display = 'none';
+            signInBtn.style.display = 'block';
+        } else {
+            // System is empty: Show Init, Hide Sign In (force setup)
+            initBtn.style.display = 'block';
+            signInBtn.style.display = 'none';
+        }
+    } catch (e) {
+        console.error("Could not check system status:", e);
+    }
+}
 
   async function logOut() {
     const btn = document.getElementById('logoutBtn');
@@ -534,8 +612,9 @@
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
 
+    await checkSystemStatus();
+
     try {
-      // Automatically tests if a valid HTTP-only cookie exists upon loading the page
       CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
@@ -662,56 +741,51 @@
   }
 
   async function refreshAdminPanel() {
-      const [users, entities] = await Promise.all([
-          apiFetch('/users/'),
-          apiFetch('/entities/')
-      ]);
+    // 1. Fetch Users, Entities, AND the current assignments
+    const [users, entities, memberships] = await Promise.all([
+        apiFetch('/users/'),
+        apiFetch('/entities/'),
+        apiFetch('/memberships/') // You will need to create this route or fetch associations
+    ]);
 
-      const userTbody = document.getElementById('adminUserTable');
-      userTbody.innerHTML = '';
-      users.forEach(u => {
+    // NOTE: If you don't have a /memberships/ route yet, you'll need to create one
+    // in main.py that returns the list of EntityMember associations.
+
+    const mapTbody = document.getElementById('adminEntityMapTable');
+    mapTbody.innerHTML = '';
+
+    entities.forEach(ent => {
+        // Find users already assigned to this entity
+        const assignedUsers = memberships
+            .filter(m => m.entity_id === ent.id)
+            .map(m => users.find(u => u.id === m.user_id))
+            .filter(u => u); // Remove undefined
+
+        let assignedHtml = assignedUsers.map(u =>
+            `<span class="pill scope-intl" style="margin-right:4px;">${u.email}
+             <span style="cursor:pointer;" onclick="unassignAdminFromEntity(${ent.id}, ${u.id})">×</span></span>`
+        ).join('');
+
+        let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)">`;
+        dropdownHtml += `<option value="">-- Add User to Organization --</option>`;
+        users.forEach(au => { dropdownHtml += `<option value="${au.id}">${au.email}</option>`; });
+        dropdownHtml += `</select>`;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}<br><span style="font-size:11px; color:var(--ink-dim)">${u.email}</span></td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role.toUpperCase()}</strong></td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
-            <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
-              <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
-              <option value="co_admin" ${u.role === 'co_admin' ? 'selected' : ''}>Co-Admin</option>
-              <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
-              <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
-            </select>
-            ${u.id !== CURRENT_USER.id && u.role !== 'super_admin' ? `<button class="btn-delete" style="padding: 4px 8px; display:inline-block;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
-          </td>
-        `;
-        userTbody.appendChild(tr);
-      });
-
-      const mapTbody = document.getElementById('adminEntityMapTable');
-      mapTbody.innerHTML = '';
-      entities.forEach(ent => {
-          let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)">`;
-          dropdownHtml += `<option value="">-- Add User to Organization --</option>`;
-          users.forEach(au => { dropdownHtml += `<option value="${au.id}">${au.email} (${au.role})</option>`; });
-          dropdownHtml += `</select>`;
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${ent.name}</strong><br><span style="font-size:10px; color:var(--ink-dim)">${ent.org_type} - ${ent.incorporation_state}</span></td>
-              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">
+            <td style="padding: 10px;"><strong>${ent.name}</strong></td>
+            <td style="padding: 10px;">
+                <div style="margin-bottom:8px;">${assignedHtml}</div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                     ${dropdownHtml}
-                    <button class="btn-delete" style="padding: 4px 8px; font-size: 11px;" onclick="deleteEntity(${ent.id})">Purge Entity</button>
+                    <button class="btn-delete" style="padding: 4px 8px;" onclick="deleteEntity(${ent.id})">Purge</button>
                 </div>
-              </td>
-          `;
-          mapTbody.appendChild(tr);
-      });
-
-      document.getElementById('adminOverlay').classList.add('open');
-      configurePermissions();
+            </td>
+        `;
+        mapTbody.appendChild(tr);
+    });
   }
-
+  
   document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
     try { await refreshAdminPanel(); } catch(e) { alert("Admin access denied."); }
   });
@@ -831,7 +905,7 @@
   }
 
   function getStatusLabel(status) {
-    switch(status) { case 'overdue': return 'OVERDUE'; case 'soon': return 'ACTION IMMINENT (< 14D)'; case 'month': return 'DUE < 30 DAYS'; case 'filed': return 'FILED'; case 'upcoming': return 'FUTURE PIPELINE'; case 'needsdate': return 'UNSCHEDULED'; }
+    switch(status) { case 'overdue': return 'Overdue'; case 'soon': return 'Action Imminent (< 14D)'; case 'month': return 'Due < 30 Days'; case 'filed': return 'Filed'; case 'upcoming': return 'Future Deadline'; case 'needsdate': return 'Unscheduled'; }
     return '';
   }
 
@@ -1152,6 +1226,7 @@
         </div>
         <div class="info-text" style="font-size:13px; color:var(--ink-dim); margin-bottom:14px;">${t.info}</div>
         <div class="action-row">${portalContent}${altActionHtml}
+          <button class="btn mini ghost" onclick="openEditTaskModal(${t.id})">Edit</button>
           <button class="btn mini ghost" onclick="toggleFormInline(${t.id})">Log Execution Status</button>
           <button class="btn mini ghost" onclick="toggleHistoryPanelInline(${t.id})">Form File Archive</button>
         </div>

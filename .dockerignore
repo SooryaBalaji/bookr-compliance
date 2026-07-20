@@ -1,9 +1,21 @@
-# Ignore node_modules
-node_modules
-tests/node_modules
-# Ignore virtual environments
-.venv
-# Ignore other development files
-.git
-__pycache__
-*.pyc
+# Ignore everything in the tests directory, specifically node_modules
+tests/node_modules/
+tests/package-lock.json
+tests/package.json
+
+# Standard ignores
+node_modules/
+.venv/
+.git/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+uploads/
+db-data/
+*.log
+.vscode/
+.idea/
+.env
+.env.*

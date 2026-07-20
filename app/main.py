@@ -12,6 +12,8 @@ from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from .models import User
 
 from app.database import engine, Base, get_db
 from app import models, schemas
@@ -52,7 +54,11 @@ UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
-
+class TaskUpdate(BaseModel):
+    due_type: str
+    due_month: Optional[int] = None
+    due_day: Optional[int] = None
+    due_text: str
 @app.get("/")
 async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
@@ -482,4 +488,25 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
             await verify_org_access(db, editor, task.entity_id)
             await db.delete(log)
     await db.commit()
+    return {"status": "success"}
+
+@app.get("/auth/is-initialized")
+async def is_initialized(db: Session = Depends(get_db)):
+    # Check if any admin exists in the database
+    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
+    return {"initialized": admin_exists}
+
+
+@app.patch("/tasks/{task_id}")
+async def update_task(task_id: int, update_data: TaskUpdate, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.due_type = update_data.due_type
+    task.due_month = update_data.due_month
+    task.due_day = update_data.due_day
+    task.due_text = update_data.due_text
+
+    db.commit()
     return {"status": "success"}
