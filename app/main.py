@@ -12,14 +12,11 @@ from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-from .models import User
 
 from app.database import engine, Base, get_db
 from app import models, schemas
 from app.auth import hash_password, verify_password, create_access_token, get_current_user
 
-# Import the new comprehensive arrays
 from app.seed_data import (
     CORE_TASKS,
     CA_FOR_PROFIT_TASKS,
@@ -54,11 +51,14 @@ UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
+
 class TaskUpdate(BaseModel):
     due_type: str
     due_month: Optional[int] = None
     due_day: Optional[int] = None
     due_text: str
+
+
 @app.get("/")
 async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
@@ -226,7 +226,6 @@ async def create_user(payload: AdminUserCreate, db: AsyncSession = Depends(get_d
     await db.refresh(user)
     return user
 
-
 @app.delete("/users/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
                       admin: models.User = Depends(get_current_admin)):
@@ -243,7 +242,6 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
     await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
-
 
 # Entity Control & Architecture Core
 @app.post("/entities/", response_model=schemas.EntityResponse)
@@ -288,7 +286,6 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
     await db.commit()
     return entity
 
-
 @app.post("/entities/{entity_id}/assign")
 async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPayload, db: AsyncSession = Depends(get_db),
                                current_admin: models.User = Depends(get_current_admin)):
@@ -328,11 +325,10 @@ async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession 
     await db.commit()
     return {"status": "success", "message": "Access revoked."}
 
-
 @app.delete("/entities/{entity_id}")
 async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
                         current_admin: models.User = Depends(get_current_admin)):
-    """Deletes an entity and cascades to remove all associated tasks and logs."""
+    #Deletes an entity and cascades to remove all associated tasks and logs
     result = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = result.scalar_one_or_none()
     if not entity:
@@ -347,6 +343,16 @@ async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
 async def list_entities(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
     res = await db.execute(select(models.Entity))
     return res.scalars().all()
+
+
+@app.get("/memberships/")
+async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
+    """Returns all user-entity assignments to build the Admin mapping table."""
+    res = await db.execute(select(models.EntityMember))
+    memberships = res.scalars().all()
+
+    # Returns a simple list of dicts for the frontend to parse
+    return [{"id": m.id, "user_id": m.user_id, "entity_id": m.entity_id} for m in memberships]
 
 
 # Tasks & Logs (Protected)
@@ -490,16 +496,20 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
     await db.commit()
     return {"status": "success"}
 
+
 @app.get("/auth/is-initialized")
-async def is_initialized(db: Session = Depends(get_db)):
+async def is_initialized(db: AsyncSession = Depends(get_db)):
     # Check if any admin exists in the database
-    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
+    result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
+    admin_exists = result.scalar_one_or_none() is not None
     return {"initialized": admin_exists}
 
 
 @app.patch("/tasks/{task_id}")
-async def update_task(task_id: int, update_data: TaskUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
+async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(models.Task).where(models.Task.id == task_id))
+    task = result.scalar_one_or_none()
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -508,5 +518,5 @@ async def update_task(task_id: int, update_data: TaskUpdate, db: Session = Depen
     task.due_day = update_data.due_day
     task.due_text = update_data.due_text
 
-    db.commit()
+    await db.commit()
     return {"status": "success"}

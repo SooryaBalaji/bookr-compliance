@@ -333,6 +333,13 @@
         <button class="btn mini" id="logoutBtn" style="width:100%;">Log Out</button>
         <button class="btn mini ghost" id="adminPanelBtn" style="width:100%; margin-top:6px; display:none;">Admin Settings</button>
       </div>
+
+      <!-- NEW: Workspace Switcher Block -->
+      <div class="sidebar-section">
+        <h4>Active Workspace</h4>
+        <div id="entitySwitcherList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
       <div class="sidebar-section">
         <h4>Status Matrix <span style="font-size:10px; opacity:0.6;" id="matrixYearLabel"></span></h4>
         <div id="statsList"></div>
@@ -355,7 +362,7 @@
           </div>
           <div class="toolbar">
             <div class="search-group">
-              <select id="quickFilterSelect">
+              <select id="quickFilterSelect" style="border-radius: var(--radius) 0 0 var(--radius);">
                 <option value="all">All Filters</option>
                 <optgroup label="Jurisdictions">
                   <option value="fed">Federal Only</option>
@@ -418,21 +425,15 @@
 
   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
-
-    // Explicitly tell the browser to send HTTP-only cookies with the request
     options.credentials = 'include';
-
     if (options.body && !(options.body instanceof URLSearchParams)) {
       headers['Content-Type'] = 'application/json';
     }
-
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
-
     if (res.status === 401) {
       CURRENT_USER = null;
       throw new Error('Session expired. Page reloading...');
     }
-
     if (!res.ok) {
       let detail = 'Request failed';
       try { detail = (await res.json()).detail || detail; } catch (e) {}
@@ -454,10 +455,7 @@
       const body = new URLSearchParams();
       body.set('username', email);
       body.set('password', password);
-      // Backend automatically sets the HTTP-only cookie on this response
       await apiFetch('/auth/login', { method: 'POST', body });
-
-      // Fetch user profile immediately after cookie is set
       CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
@@ -470,37 +468,29 @@
   async function openEditTaskModal(taskId) {
     const task = TASKS.find(t => t.id === taskId);
     if (!task) return;
-
-    // Use the same modal logic as your wizard
     openAddMilestoneWizard();
     document.getElementById('modalTitle').textContent = `Edit Milestone: ${task.short}`;
-
-    // Pre-fill the form with existing task data
     document.getElementById('newShort').value = task.short;
     document.getElementById('newTitle').value = task.title;
     document.getElementById('newDueType').value = task.dueType;
     document.getElementById('newDueMonth').value = task.dueMonth || 1;
     document.getElementById('newDueDay').value = task.dueDay || 15;
-
-    // Change the "Save" button to run an update instead of creation
     const saveBtn = document.querySelector('.btn.primary[onclick="commitCustomMilestoneObject()"]');
     saveBtn.setAttribute('onclick', `commitEditTask(${taskId})`);
     saveBtn.textContent = 'Save Changes';
-}
+  }
 
   async function commitEditTask(taskId) {
     const type = document.getElementById('newDueType').value;
     const m = parseInt(document.getElementById('newDueMonth').value);
     const d = parseInt(document.getElementById('newDueDay').value);
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
     const payload = {
         due_type: type,
         due_month: type === 'fixed' ? m : null,
         due_day: type === 'fixed' ? d : null,
         due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone'
     };
-
     try {
         await apiFetch(`/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(payload) });
         await loadDatabase();
@@ -508,7 +498,6 @@
         render();
     } catch (e) { alert('Update failed: ' + e.message); }
   }
-
 
   async function registerFirstAdmin() {
     const email = document.getElementById('authEmail').value.trim();
@@ -521,14 +510,8 @@
       errBox.style.display = 'block';
       return;
     }
-
     try {
-      await apiFetch('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ email: email, password: password, full_name: "Master Admin" })
-      });
-
-      // Fetch user profile immediately after cookie is set
+      await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email: email, password: password, full_name: "Master Admin" }) });
       CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
@@ -538,62 +521,32 @@
     }
   }
 
-  async function assignAdminToEntity(entityId, userId) {
-    if (!userId) return;
-    try {
-        await apiFetch(`/entities/${entityId}/assign`, {
-            method: 'POST',
-            body: JSON.stringify({ admin_id: parseInt(userId) })
-        });
-
-        alert("User successfully assigned to the entity!");
-
-        await refreshAdminPanel();
-        await loadDatabase();
-        render();
-    } catch (e) { alert("Mapping failed: " + e.message); }
-  }
-
   async function checkSystemStatus() {
     try {
         const status = await apiFetch('/auth/is-initialized');
         const initBtn = document.getElementById('authInitBtn');
         const signInBtn = document.getElementById('authSubmitBtn');
-
         if (status.initialized) {
-            // System is already set up: Hide Init, Show Sign In
             initBtn.style.display = 'none';
             signInBtn.style.display = 'block';
         } else {
-            // System is empty: Show Init, Hide Sign In (force setup)
             initBtn.style.display = 'block';
             signInBtn.style.display = 'none';
         }
-    } catch (e) {
-        console.error("Could not check system status:", e);
-    }
-}
+    } catch (e) { console.error("Could not check system status:", e); }
+  }
 
   async function logOut() {
     const btn = document.getElementById('logoutBtn');
     const originalText = btn.textContent;
-
     btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite; margin-right: 6px; vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/></svg><span style="vertical-align: middle;">Terminating Session...</span>`;
     btn.style.opacity = '0.7';
     btn.disabled = true;
     document.body.style.pointerEvents = 'none';
-
-    try {
-      // Hit the backend to instruct the browser to destroy the cookie
-      await apiFetch('/auth/logout', { method: 'POST' });
-    } catch (e) {
-      console.warn("Logout request failed, but clearing local state anyway.");
-    }
+    try { await apiFetch('/auth/logout', { method: 'POST' }); } catch (e) {}
 
     setTimeout(() => {
-      CURRENT_USER = null;
-      TASKS = [];
-      STATE_LOGS = [];
+      CURRENT_USER = null; TASKS = []; STATE_LOGS = [];
       document.getElementById('mainContent').innerHTML = '';
       document.getElementById('adminOverlay').classList.remove('open');
       document.getElementById('modalOverlay').classList.remove('open');
@@ -611,21 +564,18 @@
     document.getElementById('authInitBtn').addEventListener('click', registerFirstAdmin);
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
-
     await checkSystemStatus();
-
     try {
       CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
-    } catch (e) {
-      showAuthScreen();
-    }
+    } catch (e) { showAuthScreen(); }
   }
 
+  // UPDATED: Added activeEntity tracking
   let TASKS = [];
   let STATE_LOGS = [];
-  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all' };
+  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: 'all' };
 
   function calculateTargetDate(year, month, day) {
     let targetDate = new Date(year, month - 1, day);
@@ -660,14 +610,11 @@
   }
 
   async function configurePermissions() {
-    // Admin Control Display
     if (CURRENT_USER && (CURRENT_USER.role === 'super_admin' || CURRENT_USER.role === 'co_admin')) {
       document.getElementById('adminPanelBtn').style.display = 'block';
     } else {
       document.getElementById('adminPanelBtn').style.display = 'none';
     }
-
-    // Strict Viewer UI Lockdown
     if (CURRENT_USER && CURRENT_USER.role === 'viewer') {
       document.getElementById('addMilestoneBtn').style.display = 'none';
       document.querySelectorAll('.btn-delete').forEach(btn => btn.style.display = 'none');
@@ -678,7 +625,6 @@
     }
   }
 
-  // Entity Management & Admin Mappings
   async function createNewEntity() {
       const payload = {
           creation_template: document.getElementById('entityTemplate').value,
@@ -688,12 +634,7 @@
           headquarters: document.getElementById('entityHq').value.trim(),
           naics_code: document.getElementById('entityNaics').value.trim()
       };
-
-      if (!payload.name || !payload.incorporation_state || !payload.naics_code) {
-          alert("Name, Incorporation State, and NAICS Code are required.");
-          return;
-      }
-
+      if (!payload.name || !payload.incorporation_state || !payload.naics_code) { alert("Name, Incorporation State, and NAICS Code are required."); return; }
       try {
           await apiFetch('/entities/', { method: 'POST', body: JSON.stringify(payload) });
           alert(`Entity ${payload.name} deployed successfully.`);
@@ -708,10 +649,7 @@
   async function assignAdminToEntity(entityId, userId) {
       if (!userId) return;
       try {
-          await apiFetch(`/entities/${entityId}/assign`, {
-              method: 'POST',
-              body: JSON.stringify({ admin_id: parseInt(userId) })
-          });
+          await apiFetch(`/entities/${entityId}/assign`, { method: 'POST', body: JSON.stringify({ admin_id: parseInt(userId) }) });
           await refreshAdminPanel();
           await loadDatabase();
           render();
@@ -741,68 +679,58 @@
   }
 
   async function refreshAdminPanel() {
-    // 1. Fetch Users, Entities, AND the current assignments
-    const [users, entities, memberships] = await Promise.all([
-        apiFetch('/users/'),
-        apiFetch('/entities/'),
-        apiFetch('/memberships/') // You will need to create this route or fetch associations
-    ]);
+    const [users, entities] = await Promise.all([ apiFetch('/users/'), apiFetch('/entities/') ]);
+    let memberships = [];
+    try { memberships = await apiFetch('/memberships/'); } catch (e) { console.warn('Memberships route not found.'); }
 
-    // NOTE: If you don't have a /memberships/ route yet, you'll need to create one
-    // in main.py that returns the list of EntityMember associations.
+    const userTbody = document.getElementById('adminUserTable');
+    userTbody.innerHTML = '';
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="padding: 10px;"><strong>${u.full_name || 'No Name Provided'}</strong><br><span style="color:var(--ink-dim); font-size:11px;">${u.email}</span></td>
+            <td style="padding: 10px;"><span class="pill scope-fed" style="background: var(--ink); text-transform: uppercase; font-size: 10px;">${u.role.replace('_', ' ')}</span></td>
+            <td style="padding: 10px; display: flex; gap: 8px;">
+                <select style="padding:4px; font-size:11px; border-radius: 4px;" onchange="updateUserRole(${u.id}, this.value)">
+                    <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+                    <option value="co_admin" ${u.role === 'co_admin' ? 'selected' : ''}>Co-Admin</option>
+                    <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
+                    <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                </select>
+                <button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Remove</button>
+            </td>
+        `;
+        userTbody.appendChild(tr);
+    });
 
     const mapTbody = document.getElementById('adminEntityMapTable');
     mapTbody.innerHTML = '';
-
     entities.forEach(ent => {
-        // Find users already assigned to this entity
-        const assignedUsers = memberships
-            .filter(m => m.entity_id === ent.id)
-            .map(m => users.find(u => u.id === m.user_id))
-            .filter(u => u); // Remove undefined
-
-        let assignedHtml = assignedUsers.map(u =>
-            `<span class="pill scope-intl" style="margin-right:4px;">${u.email}
-             <span style="cursor:pointer;" onclick="unassignAdminFromEntity(${ent.id}, ${u.id})">×</span></span>`
-        ).join('');
-
-        let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)">`;
-        dropdownHtml += `<option value="">-- Add User to Organization --</option>`;
+        const assignedUsers = memberships.filter(m => m.entity_id === ent.id).map(m => users.find(u => u.id === m.user_id)).filter(u => u);
+        let assignedHtml = assignedUsers.map(u => `<span class="pill scope-intl" style="margin-right:4px;">${u.email} <span style="cursor:pointer;" onclick="unassignAdminFromEntity(${ent.id}, ${u.id})">×</span></span>`).join('');
+        let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)"><option value="">-- Add User to Organization --</option>`;
         users.forEach(au => { dropdownHtml += `<option value="${au.id}">${au.email}</option>`; });
         dropdownHtml += `</select>`;
-
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="padding: 10px;"><strong>${ent.name}</strong></td>
-            <td style="padding: 10px;">
-                <div style="margin-bottom:8px;">${assignedHtml}</div>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    ${dropdownHtml}
-                    <button class="btn-delete" style="padding: 4px 8px;" onclick="deleteEntity(${ent.id})">Purge</button>
-                </div>
-            </td>
-        `;
+        tr.innerHTML = `<td style="padding: 10px;"><strong>${ent.name}</strong></td><td style="padding: 10px;"><div style="margin-bottom:8px;">${assignedHtml}</div><div style="display: flex; gap: 12px; align-items: center;">${dropdownHtml}<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteEntity(${ent.id})">Purge</button></div></td>`;
         mapTbody.appendChild(tr);
     });
   }
-  
+
   document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
-    try { await refreshAdminPanel(); } catch(e) { alert("Admin access denied."); }
+    try { await refreshAdminPanel(); document.getElementById('adminOverlay').classList.add('open'); }
+    catch(e) { alert("Admin interface could not be loaded. Error: " + e.message); }
   });
 
   async function updateUserRole(userId, newRole) {
-    try {
-      await apiFetch(`/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role: newRole }) });
-      await refreshAdminPanel();
-    } catch(e) { alert("Failed to update user role: " + e.message); }
+    try { await apiFetch(`/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role: newRole }) }); await refreshAdminPanel(); }
+    catch(e) { alert("Failed to update user role: " + e.message); }
   }
 
   async function deleteUser(userId) {
     if (confirm("Are you sure you want to permanently delete this user account?")) {
-      try {
-        await apiFetch(`/users/${userId}`, { method: 'DELETE' });
-        await refreshAdminPanel();
-      } catch(e) { alert("Failed to delete user: " + e.message); }
+      try { await apiFetch(`/users/${userId}`, { method: 'DELETE' }); await refreshAdminPanel(); }
+      catch(e) { alert("Failed to delete user: " + e.message); }
     }
   }
 
@@ -811,10 +739,8 @@
     const email = document.getElementById('newMemberEmail').value.trim();
     const password = document.getElementById('newMemberPassword').value;
     const role = document.getElementById('newMemberRole').value;
-
     if (!email || !password) { alert('Email and a temporary password are required.'); return; }
     if (password.length < 8) { alert('Password must be at least 8 characters.'); return; }
-
     try {
       await apiFetch('/users/', { method: 'POST', body: JSON.stringify({ email, password, full_name: full_name || null, role }) });
       document.getElementById('newMemberName').value = '';
@@ -920,6 +846,9 @@
 
   function getFilteredTasks() {
     return TASKS.filter(t => {
+      // NEW: Filter out tasks if an entity is selected
+      if (state.activeEntity !== 'all' && t.entity !== state.activeEntity) return false;
+
       if (!state.selectedScopes.includes(t.scope)) return false;
       const status = getTaskStatus(t);
       if (!state.selectedStatuses.includes(status)) return false;
@@ -950,24 +879,58 @@
     });
   }
 
+  // NEW: Renders the Entity Switcher Buttons dynamically
+  function renderEntitySwitcher() {
+      const container = document.getElementById('entitySwitcherList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const uniqueEntities = [...new Set(TASKS.map(t => t.entity))].filter(Boolean);
+
+      // Global Portfolio Button
+      const allBtn = document.createElement('button');
+      allBtn.className = `btn mini ${state.activeEntity === 'all' ? 'primary' : 'ghost'}`;
+      allBtn.style.textAlign = 'left';
+      allBtn.style.padding = '6px 12px';
+      allBtn.textContent = 'Global Portfolio (All)';
+      allBtn.onclick = () => { state.activeEntity = 'all'; render(); };
+      container.appendChild(allBtn);
+
+      // Buttons for each specific entity
+      uniqueEntities.forEach(ent => {
+        const btn = document.createElement('button');
+        btn.className = `btn mini ${state.activeEntity === ent ? 'primary' : 'ghost'}`;
+        btn.style.textAlign = 'left';
+        btn.style.padding = '6px 12px';
+        btn.textContent = ent;
+        btn.onclick = () => { state.activeEntity = ent; render(); };
+        container.appendChild(btn);
+      });
+  }
+
   function render() {
     renderSidebarFilters();
+    renderEntitySwitcher(); // Execute new UI rendering
+
     const title = document.getElementById('monthTitle');
     const navControls = document.getElementById('calNavCluster');
     const workspace = document.getElementById('mainContent');
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
+    // NEW: Update Dashboard Title dynamically based on active entity
+    let prefix = state.activeEntity === 'all' ? 'Global Portfolio' : state.activeEntity;
+
     if (state.currentView === 'calendar') {
       const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      title.textContent = `${monthNames[state.currentMonth]} ${state.currentYear} Pipeline`;
+      title.textContent = `${prefix} | ${monthNames[state.currentMonth]} ${state.currentYear} Pipeline`;
       navControls.style.display = 'flex';
       renderCalendarGrid(workspace);
     } else if (state.currentView === 'list') {
-      title.textContent = `Master Corporate Ledger Workspace (${state.currentYear})`;
+      title.textContent = `${prefix} | Master Ledger (${state.currentYear})`;
       navControls.style.display = 'flex';
       renderMasterLedgerView(workspace);
     } else if (state.currentView === 'archive') {
-      title.textContent = `Global Corporate Audit Logs`;
+      title.textContent = `${prefix} | Audit Logs`;
       navControls.style.display = 'none';
       renderArchiveView(workspace);
     }
@@ -1041,6 +1004,14 @@
       { id: 'INS', label: 'Corporate Insurance Policies', filter: t => t.scope === 'Insurance' }
     ];
 
+    sections.sort((a, b) => {
+      const aTasks = filtered.filter(a.filter);
+      const bTasks = filtered.filter(b.filter);
+      const aMin = aTasks.length ? Math.min(...aTasks.map(t => t.num || 9999)) : 9999;
+      const bMin = bTasks.length ? Math.min(...bTasks.map(t => t.num || 9999)) : 9999;
+      return aMin - bMin;
+    });
+
     sections.forEach(sec => {
       const laneTasks = filtered.filter(sec.filter);
       if (laneTasks.length === 0) return;
@@ -1056,24 +1027,9 @@
       `;
 
       const cardsContainer = laneDiv.querySelector(`#lane-cards-${sec.id}`);
+      const sortedTasks = [...laneTasks].sort((a,b) => (a.num || 0) - (b.num || 0));
+      sortedTasks.forEach(t => cardsContainer.appendChild(renderTaskCard(t)));
 
-      if (sec.id === 'ROLL' || sec.id === 'INS') {
-        laneTasks.forEach(t => cardsContainer.appendChild(renderTaskCard(t)));
-      } else {
-        const sortedTasks = [...laneTasks].sort((a,b) => (a.dueMonth * 100 + a.dueDay) - (b.dueMonth * 100 + b.dueDay));
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        let currentMonth = -1;
-        sortedTasks.forEach(t => {
-          if (t.dueMonth !== currentMonth) {
-            currentMonth = t.dueMonth;
-            const monthHeader = document.createElement('div');
-            monthHeader.className = 'list-month-header';
-            monthHeader.textContent = `${monthNames[currentMonth - 1]} Deadlines`;
-            cardsContainer.appendChild(monthHeader);
-          }
-          cardsContainer.appendChild(renderTaskCard(t));
-        });
-      }
       masterWrapper.appendChild(laneDiv);
     });
     container.appendChild(masterWrapper);
@@ -1155,7 +1111,19 @@
     const stackContainer = document.createElement('div');
     stackContainer.className = 'history-archive-stack';
 
-    [...STATE_LOGS].reverse().forEach(l => {
+    // Apply the entity filter to logs if an active entity is selected
+    let logsToRender = STATE_LOGS;
+    if (state.activeEntity !== 'all') {
+       const activeTaskIds = TASKS.filter(t => t.entity === state.activeEntity).map(t => t.id);
+       logsToRender = STATE_LOGS.filter(l => activeTaskIds.includes(l.taskId));
+    }
+
+    if (logsToRender.length === 0) {
+       container.innerHTML = '<div class="empty-state">No execution logs found for this specific workspace.</div>';
+       return;
+    }
+
+    [...logsToRender].reverse().forEach(l => {
       const parentTask = TASKS.find(t => t.id === l.taskId) || { short: 'Deleted Module', title: l.taskId };
       const dlButton = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'compliance_doc'}" class="dl-link">Local File</a>` : '';
       const cloudButton = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud Link</a>` : '';
