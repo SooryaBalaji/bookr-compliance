@@ -20,7 +20,6 @@
       --surface2: #f4f4f2;
       --border: #e4e4e0;
       --border-soft: #ededea;
-
       --ink: #1c1c1a;
       --ink-dim: #5c5c57;
       --ink-faint: #9c9c93;
@@ -41,60 +40,20 @@
       --filed: #16a34a;
       --upcoming: #2563eb;
       --needsdate: #7c3aed;
-
       --radius: 6px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      color: var(--ink);
-      line-height: 1.5;
-      font-size: 14px;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--ink); line-height: 1.5; font-size: 14px; }
+    .app-container { display: flex; min-height: 100vh; }
 
-    .app-container {
-      display: flex;
-      min-height: 100vh;
-    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* Left Frame Command Sidebar */
-    .sidebar {
-      width: 280px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+    .brand-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--brass); border-bottom: 2px solid var(--brass-soft); padding-bottom: 12px; }
+    .sidebar-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-dim); margin-bottom: 12px; font-family: 'IBM Plex Mono', monospace; }
 
-    .brand-title {
-      font-family: 'Fraunces', serif;
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--brass);
-      border-bottom: 2px solid var(--brass-soft);
-      padding-bottom: 12px;
-    }
-
-    .sidebar-section h4 {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--ink-dim);
-      margin-bottom: 12px;
-      font-family: 'IBM Plex Mono', monospace;
-    }
-
-    .stat-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      font-size: 13px;
-    }
+    .stat-line { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
     .stat-line .n { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
     .stat-line.overdue .n { color: var(--overdue); }
     .stat-line.soon .n { color: var(--soon); }
@@ -103,204 +62,51 @@
     .stat-line.upcoming .n { color: var(--upcoming); }
     .stat-line.needsdate .n { color: var(--needsdate); }
 
-    .scope-line {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      cursor: pointer;
-      border-radius: var(--radius);
-      transition: background 0.2s;
-    }
+    .scope-line { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: var(--radius); transition: background 0.2s; }
     .scope-line:hover { background: var(--bg); }
     .scope-line.off { opacity: 0.35; text-decoration: line-through; }
     .scope-line .swatch { width: 10px; height: 10px; border-radius: 50%; }
     .scope-line .cnt { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); }
-
-    .unsched-item {
-      font-size: 12px;
-      background: #faf5ff;
-      border: 1px solid #e9d5ff;
-      color: #6b21a8;
-      padding: 6px 10px;
-      border-radius: 4px;
-      margin-bottom: 6px;
-      cursor: pointer;
-    }
+    .unsched-item { font-size: 12px; background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; cursor: pointer; }
     .unsched-empty { font-size: 12px; color: var(--ink-faint); font-style: italic; }
 
-    /* Main Panel Viewports */
-    .main-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+    .main-panel { flex: 1; display: flex; flex-direction: column; }
+    .control-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; flex-direction: column; gap: 16px; }
+    .top-bar-row { display: flex; justify-content: space-between; align-items: center; }
+    .header-title-cluster h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+    .toolbar { display: flex; align-items: center; gap: 12px; }
+    .view-toggle { display: flex; gap: 8px; }
 
-    .control-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .top-bar-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .header-title-cluster h2 {
-      font-family: 'Fraunces', serif;
-      font-size: 24px;
-      font-weight: 500;
-    }
-
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .view-toggle {
-      display: flex;
-      gap: 8px;
-    }
-
-    .view-toggle button, .nav-cluster button, .btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--ink);
-      padding: 6px 12px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
+    .view-toggle button, .nav-cluster button, .btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink); padding: 6px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
     .view-toggle button:hover, .nav-cluster button:hover, .btn:hover { background: var(--bg); border-color: var(--ink-dim); }
     .view-toggle button.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-
     .btn.primary { background: var(--brass); color: var(--surface); border-color: var(--brass); }
     .btn.primary:hover { background: #6e5d40; border-color: #6e5d40; }
     .btn.mini { font-size: 11px; padding: 3px 8px; }
     .btn.ghost { border-color: transparent; background: transparent; color: var(--ink-dim); }
     .btn.ghost:hover { background: var(--border-soft); color: var(--ink); }
 
-    /* Delete Button UI */
-    .btn-delete {
-      background: transparent;
-      border: 1px solid var(--overdue);
-      color: var(--overdue);
-      padding: 3px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
+    .btn-delete { background: transparent; border: 1px solid var(--overdue); color: var(--overdue); padding: 3px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
     .btn-delete:hover { background: #fef2f2; }
 
-    /* Unified Search Group */
-    .search-group {
-      display: flex;
-      align-items: center;
-    }
-    .search-group select {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-right: none;
-      padding: 6px 10px;
-      border-radius: var(--radius) 0 0 var(--radius);
-      color: var(--ink-dim);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      outline: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+    .search-group { display: flex; align-items: center; }
+    .search-group select { background: var(--surface2); border: 1px solid var(--border); border-right: none; padding: 6px 10px; border-radius: var(--radius) 0 0 var(--radius); color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12px; outline: none; cursor: pointer; transition: background 0.2s; }
     .search-group select:hover { background: var(--border-soft); }
-    .search-group input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 0 var(--radius) var(--radius) 0;
-      color: var(--ink);
-      width: 220px;
-      outline: none;
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      transition: border-color 0.2s;
-    }
-    .search-group input:focus {
-      border-color: var(--ink-dim);
-    }
+    .search-group input { background: var(--bg); border: 1px solid var(--border); padding: 6px 12px; border-radius: 0 var(--radius) var(--radius) 0; color: var(--ink); width: 220px; outline: none; font-family: 'Inter', sans-serif; font-size: 13px; transition: border-color 0.2s; }
+    .search-group input:focus { border-color: var(--ink-dim); }
 
-    .select-input {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 5px 12px;
-      border-radius: var(--radius);
-      color: var(--ink);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px;
-    }
+    .select-input { background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: var(--radius); color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+    .display-workspace { flex: 1; padding: 32px; overflow-y: auto; }
 
-    .display-workspace {
-      flex: 1;
-      padding: 32px;
-      overflow-y: auto;
-    }
-
-    /* Calendar Grid Layouts */
-    .weekdays {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      font-weight: 600;
-      font-size: 11px;
-      font-family: 'IBM Plex Mono', monospace;
-      color: var(--ink-dim);
-      margin-bottom: 8px;
-    }
-
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      grid-auto-rows: minmax(110px, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .day-cell {
-      background: var(--surface);
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+    .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 600; font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); margin-bottom: 8px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(110px, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .day-cell { background: var(--surface); padding: 8px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: background 0.2s; }
     .day-cell:hover { background: var(--bg); }
     .day-cell.outside { background: var(--surface2); color: var(--ink-faint); cursor: default; }
     .day-cell.today { background: #fffbeb; box-shadow: inset 0 0 0 2px #fef3c7; }
-
     .daynum { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; margin-bottom: 4px; }
 
-    .chip {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--surface);
-    }
+    .chip { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--surface); }
     .chip.overdue { background: var(--overdue); }
     .chip.soon { background: var(--soon); }
     .chip.month { background: var(--month); }
@@ -308,90 +114,21 @@
     .chip.upcoming { background: var(--upcoming); }
     .chip.needsdate { background: var(--needsdate); }
 
-    /* Master Ledger Workspaces */
-    .master-ledger-container {
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-    }
+    .master-ledger-container { display: flex; flex-direction: column; gap: 32px; }
+    .quarter-section-lane { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .quarter-lane-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--brass); border-bottom: 2px solid var(--brass-soft); padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .quarter-lane-title .count { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-dim); background: var(--surface2); padding: 2px 8px; border-radius: 12px; }
 
-    .quarter-section-lane {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-
-    .quarter-lane-title {
-      font-family: 'Fraunces', serif;
-      font-size: 18px;
-      color: var(--brass);
-      border-bottom: 2px solid var(--brass-soft);
-      padding-bottom: 8px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .quarter-lane-title .count {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      color: var(--ink-dim);
-      background: var(--surface2);
-      padding: 2px 8px;
-      border-radius: 12px;
-    }
-
-    .list-month-header {
-      font-family: 'Fraunces', serif;
-      font-size: 14px;
-      color: var(--ink-dim);
-      border-bottom: 1px dashed var(--border);
-      padding-bottom: 4px;
-      margin: 16px 0 10px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-    }
-
-    .task-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 12px;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .task-card .num-col {
-      background: var(--surface2);
-      border-right: 1px solid var(--border);
-      width: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'IBM Plex Mono', monospace;
-      color: var(--ink-faint);
-      font-size: 12px;
-    }
-
+    .list-month-header { font-family: 'Fraunces', serif; font-size: 14px; color: var(--ink-dim); border-bottom: 1px dashed var(--border); padding-bottom: 4px; margin: 16px 0 10px 0; text-transform: uppercase; letter-spacing: 0.02em; }
+    .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; display: flex; overflow: hidden; }
+    .task-card .num-col { background: var(--surface2); border-right: 1px solid var(--border); width: 44px; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; color: var(--ink-faint); font-size: 12px; }
     .task-card .body-col { flex: 1; padding: 16px; position: relative; }
+
     .task-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px; }
     .task-top h3 { font-size: 15px; font-weight: 600; color: var(--ink); }
-
     .status-block { display: flex; align-items: center; gap: 10px; }
-    .badge {
-      width: 45px;
-      height: 18px;
-      border-radius: 3px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      color: var(--surface);
-      font-weight: bold;
-    }
+
+    .badge { width: 45px; height: 18px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--surface); font-weight: bold; }
     .badge.overdue, .badge.Q1 { background: var(--overdue); }
     .badge.soon, .badge.Q2 { background: var(--soon); }
     .badge.filed, .badge.Q3 { background: var(--filed); }
@@ -417,46 +154,28 @@
 
     .due-text { font-size: 12px; color: var(--ink-dim); font-weight: 500; }
     .due-text .cap { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
-
     .action-row { display: flex; gap: 8px; align-items: center; border-top: 1px dashed var(--border-soft); padding-top: 12px; margin-top: 12px; }
-
     .inline-form { display: none; margin-top: 12px; padding: 16px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
     .inline-form.open { display: block; }
-
     .form-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
     .field { display: flex; flex-direction: column; gap: 4px; }
     .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); text-transform: uppercase; }
     .field input, .field select, .field textarea { background: var(--surface); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; color: var(--ink); font-family: inherit; font-size: 13px; width: 100%; }
 
-    /* Structural Overlays */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(28, 28, 26, 0.4); backdrop-filter: blur(2px);
-      display: none; align-items: center; justify-content: center; z-index: 1000;
-      padding: 20px;
-    }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(28, 28, 26, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; transition: opacity 0.3s ease; }
     .modal-overlay.open { display: flex; }
-    .modal-container {
-      background: var(--surface); border: 1px solid var(--border);
-      width: 100%; max-width: 800px; max-height: 85vh; border-radius: 8px;
-      display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-    }
+    .modal-container { background: var(--surface); border: 1px solid var(--border); width: 100%; max-width: 800px; max-height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
     .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .modal-header h2 { font-family: 'Fraunces', serif; font-size: 20px; color: var(--brass); }
     .modal-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
     .modal-empty { text-align: center; padding: 40px; color: var(--ink-faint); font-style: italic; }
 
-    /* Redesigned Form / Wizard Layout Layouts */
     .task-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .task-form-grid .full-width { grid-column: span 2; }
     .task-form-three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
-    /* Redesigned Modern History / Audit Rows */
     .history-archive-stack { display: flex; flex-direction: column; gap: 12px; }
-    .history-archive-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 16px; display: grid; grid-template-columns: 140px 1fr 150px 100px; align-items: center; gap: 16px;
-    }
+    .history-archive-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: grid; grid-template-columns: 140px 1fr 150px 100px; align-items: center; gap: 16px; }
     .history-archive-card .timestamp { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-dim); }
     .history-archive-card .details { display: flex; flex-direction: column; gap: 4px; }
     .history-archive-card .details h4 { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px;}
@@ -466,10 +185,8 @@
     .history-archive-card .actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
     .empty-state { padding: 48px; text-align: center; color: var(--ink-faint); font-style: italic; border: 1px dashed var(--border); border-radius: var(--radius); }
-
     .dl-link { color: var(--brass); text-decoration: none; font-weight: 500; font-size: 12px; display: flex; align-items: center; gap: 4px; }
     .dl-link:hover { text-decoration: underline; }
-
     .history-panel { display: none; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .history-panel.open { display: block; }
     .history-panel table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
@@ -478,11 +195,9 @@
     .history-empty { text-align: center; color: var(--ink-faint); font-style: italic; padding: 16px !important; }
     .del-x { color: var(--overdue); cursor: pointer; font-weight: bold; text-align: center; font-size: 14px; width: 40px; }
     .del-x:hover { background: #fef2f2; }
-
     .del-btn-icon { color: var(--ink-faint); cursor: pointer; font-size: 16px; font-weight: 500; padding: 2px 6px; border-radius: 4px; transition: all 0.2s; }
     .del-btn-icon:hover { color: var(--overdue); background: #fef2f2; }
 
-    /* Report Specific Styles */
     .report-stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; }
     .report-stat-box h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
     .report-stat-box h2 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; }
@@ -490,104 +205,127 @@
 </head>
 <body>
 
-  <!-- Auth Modal -->
+  <!-- Polished Professional Auth Modal -->
   <div class="modal-overlay open" id="authOverlay" style="z-index:999;">
-    <div class="modal-container" style="max-width:380px;">
-      <div class="modal-header">
-        <h2 id="authTitle">Sign In — Bookr Compliance</h2>
+    <div class="modal-container" style="max-width:400px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
+
+      <div class="modal-header" style="text-align: center; display: block; background: var(--surface2); padding: 32px 24px 24px 24px; border-bottom: none;">
+        <h1 style="font-family: 'Fraunces', serif; color: var(--brass); font-size: 26px; margin-bottom: 4px; letter-spacing: -0.02em;">Bookr, Inc.</h1>
+        <p style="font-size: 13px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em;">Compliance Command Centre</p>
       </div>
-      <div class="modal-body" style="padding: 24px;">
-        <div id="authError" style="display:none; background:#fef2f2; color:var(--overdue); border:1px solid #fecaca; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px;"></div>
-        <div class="task-form-grid" style="grid-template-columns: 1fr;">
+
+      <div class="modal-body" style="padding: 32px 32px 40px 32px; background: var(--surface);">
+        <h3 id="authTitle" style="margin-bottom: 24px; font-size: 16px; text-align: center; font-weight: 600;">Sign in to your account</h3>
+        <div id="authError" style="display:none; background:#fef2f2; color:var(--overdue); border:1px solid #fecaca; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:20px; text-align: center;"></div>
+
+        <div class="task-form-grid" style="grid-template-columns: 1fr; gap: 18px;">
           <div class="field" id="authNameField" style="display:none;">
             <label>Full Name</label>
-            <input type="text" id="authName" placeholder="Jane Smith">
+            <input type="text" id="authName" placeholder="Jane Smith" style="padding: 10px; font-size: 14px;">
           </div>
           <div class="field">
-            <label>Email</label>
-            <input type="email" id="authEmail" placeholder="you@bookr.com">
+            <label>Email Address</label>
+            <input type="email" id="authEmail" placeholder="you@bookr.com" style="padding: 10px; font-size: 14px;">
           </div>
           <div class="field">
             <label>Password</label>
-            <input type="password" id="authPassword" placeholder="At least 8 characters">
+            <input type="password" id="authPassword" placeholder="••••••••" style="padding: 10px; font-size: 14px;">
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-            <button class="btn ghost" type="button" id="authToggleMode" style="padding:6px 4px;">Need an account? Register</button>
-            <button class="btn primary" type="button" id="authSubmitBtn">Sign In</button>
+
+          <button class="btn primary" type="button" id="authSubmitBtn" style="margin-top: 12px; padding: 12px; font-size: 14px; width: 100%;">Sign In</button>
+
+          <div style="text-align: center; margin-top: 12px;">
+            <button class="btn ghost" type="button" id="authToggleMode" style="font-size: 13px; color: var(--ink-dim);">Need an account? Register</button>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
-  <!-- Dynamic NAICS Onboarding Modal -->
-  <div class="modal-overlay" id="naicsOverlay" style="z-index:998;">
-    <div class="modal-container" style="max-width:500px;">
-      <div class="modal-header">
-        <h2>System Initialization</h2>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 13px; color: var(--ink-dim); margin-bottom: 16px;">Enter your organization's 6-digit NAICS classification code. We'll detect your entity type — Bookr internal, non-profit, or for-profit — and load the matching standard compliance checklist. You can confirm or override the detected type below.</p>
-        <div class="task-form-grid" style="grid-template-columns: 1fr;">
-
-          <div class="field">
-            <label>6-Digit NAICS Code</label>
-            <input type="text" id="naicsCode" placeholder="e.g. 541511 or 813319" maxlength="6" inputmode="numeric">
-            <div id="naicsConfirmMsg" style="font-size: 12px; margin-top: 6px; min-height: 18px;"></div>
-          </div>
-
-          <div class="field">
-            <label>Confirm Organization Structure</label>
-            <select id="orgType">
-              <option value="for-profit">Standard For-Profit Corporation / LLC</option>
-              <option value="non-profit">501(c)(3) Non-Profit Organization</option>
-              <option value="bookr">Bookr Internal Setup</option>
-            </select>
-          </div>
-
-          <button class="btn primary" style="margin-top: 12px;" onclick="submitNaicsOnboarding()">Generate Ledger</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Admin User Management Modal -->
+  <!-- Master Admin Engine -->
   <div class="modal-overlay" id="adminOverlay" style="z-index:997;">
-    <div class="modal-container">
+    <div class="modal-container" style="max-width: 900px;">
       <div class="modal-header">
-        <h2>Access Control Panel</h2>
+        <h2>Master Infrastructure Control</h2>
         <button class="btn small" onclick="document.getElementById('adminOverlay').classList.remove('open')">Close</button>
       </div>
       <div class="modal-body">
-        <div style="border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px; margin-bottom: 16px; background: var(--surface2);">
-          <h4 style="margin: 0 0 10px 0; font-size: 13px;">Add New Member</h4>
-          <div id="addMemberError" style="display:none; color: var(--filed); font-size: 12px; margin-bottom: 8px;"></div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <input type="text" id="newMemberName" placeholder="Full name" style="padding:6px; font-size:12px;">
-            <input type="email" id="newMemberEmail" placeholder="Email address" style="padding:6px; font-size:12px;">
-            <input type="password" id="newMemberPassword" placeholder="Temporary password (min 8 chars)" style="padding:6px; font-size:12px;">
-            <select id="newMemberRole" style="padding:6px; font-size:12px;">
-              <option value="member_read">Viewer (Read Only)</option>
-              <option value="member_edit">Editor (Can Log Tasks)</option>
-              <option value="admin">Co-Admin (Full Access)</option>
-            </select>
+
+        <!-- Option 1: Entity Creation -->
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+          <h3 style="margin-bottom: 12px; font-family: 'Fraunces', serif; color: var(--brass);">1. Create Organization Entity</h3>
+          <div class="task-form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="field">
+               <label>Creation Template Map</label>
+               <select id="entityTemplate">
+                 <option value="bookr">The Bookr Entity (Standard Core Tasks)</option>
+                 <option value="pebble">Pebble Impact LLC (Pebble Direct Task Map)</option>
+                 <option value="custom">Custom Entity (Load Default Standards via Org Type)</option>
+               </select>
+            </div>
+            <div class="field"><label>Organization Name</label><input type="text" id="entityName" placeholder="e.g. Acme Corp"></div>
+
+            <div class="task-form-three-col full-width">
+              <div class="field">
+                <label>Organization Type</label>
+                <select id="entityOrgType">
+                   <option value="c-corp">C-Corporation</option>
+                   <option value="llc">Limited Liability Company (LLC)</option>
+                   <option value="non-profit">501(c)(3) Non-Profit</option>
+                   <option value="s-corp">S-Corporation</option>
+                </select>
+              </div>
+              <div class="field"><label>Incorporation State</label><input type="text" id="entityState" placeholder="e.g. Delaware"></div>
+              <div class="field"><label>NAICS Code</label><input type="text" id="entityNaics" placeholder="6-digit code"></div>
+            </div>
+            <div class="field full-width"><label>Headquarters Location</label><input type="text" id="entityHq" placeholder="City, State"></div>
           </div>
-          <button class="btn small primary" style="margin-top: 10px;" onclick="addNewMember()">Create Account</button>
+          <button class="btn small primary" style="margin-top: 16px;" onclick="createNewEntity()">Deploy Entity</button>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
-              <th style="padding: 8px;">Name</th>
-              <th style="padding: 8px;">Email</th>
-              <th style="padding: 8px;">Current Role</th>
-              <th style="padding: 8px;">Modify Access</th>
-            </tr>
-          </thead>
-          <tbody id="adminUserTable"></tbody>
-        </table>
+        <!-- Option 2: Users, Roles, and Oversight Mapping -->
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+          <h3 style="margin-bottom: 12px; font-family: 'Fraunces', serif; color: var(--brass);">2. Create Users & Manage Role Access</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr; gap: 8px; margin-bottom: 16px;">
+            <input type="text" id="newMemberName" placeholder="Full name" style="padding:6px; font-size:12px;">
+            <input type="email" id="newMemberEmail" placeholder="Email address" style="padding:6px; font-size:12px;">
+            <input type="password" id="newMemberPassword" placeholder="Temp password" style="padding:6px; font-size:12px;">
+            <select id="newMemberRole" style="padding:6px; font-size:12px;">
+              <option value="admin">Co-Admin (Can be assigned 1 Entity)</option>
+              <option value="member_edit">Standard User (Add/Edit/Delete Forms)</option>
+              <option value="member_read">Read-Only User (Viewer Only)</option>
+            </select>
+          </div>
+          <button class="btn small primary" onclick="addNewMember()">Provision User Account</button>
 
-        <button class="btn small ghost" style="margin-top: 16px; width: 100%;" onclick="reopenNaicsOnboarding()">Reclassify Organization (NAICS)</button>
+          <hr style="border: 0; border-top: 1px dashed var(--border); margin: 24px 0;">
+          <h4 style="margin-bottom: 12px; font-size: 13px;">User Roster</h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; margin-bottom: 24px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
+                <th style="padding: 8px;">Name / Email</th>
+                <th style="padding: 8px;">Current Role</th>
+                <th style="padding: 8px;">Modify Access</th>
+              </tr>
+            </thead>
+            <tbody id="adminUserTable"></tbody>
+          </table>
+
+          <!-- Live Admin-to-Entity Mapping Block -->
+          <h4 style="margin-bottom: 12px; font-size: 13px;">Map Co-Admins to Entities (Strict 1-to-1)</h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
+                <th style="padding: 8px;">Target Entity</th>
+                <th style="padding: 8px;">Current Oversight Admin</th>
+                <th style="padding: 8px;">Assign / Remap Co-Admin</th>
+              </tr>
+            </thead>
+            <tbody id="adminEntityMapTable"></tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   </div>
@@ -622,7 +360,6 @@
             <h2 id="monthTitle">Corporate Framework View</h2>
           </div>
           <div class="toolbar">
-
             <div class="search-group">
               <select id="quickFilterSelect">
                 <option value="all">All Filters</option>
@@ -683,14 +420,13 @@
   <script>
   // ===========================================================
   // AUTH + API CLIENT
-  // Talks to the FastAPI backend mounted at the same origin.
   // ===========================================================
   const API_BASE = '';
   let AUTH_TOKEN = localStorage.getItem('bookr_token') || null;
   let CURRENT_USER = null;
-  let authMode = 'login'; // 'login' | 'register'
+  let authMode = 'login';
 
-   async function apiFetch(path, options = {}) {
+  async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
     if (AUTH_TOKEN) headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
     if (options.body && !(options.body instanceof URLSearchParams)) {
@@ -699,13 +435,11 @@
 
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
 
-    // THE FIX: If the server returns 401, the database is likely wiped.
-    // We treat this as a signal to perform a total clean-up.
     if (res.status === 401) {
       localStorage.removeItem('bookr_token');
       AUTH_TOKEN = null;
       CURRENT_USER = null;
-      window.location.reload(); // Hard reset
+      window.location.reload();
       throw new Error('Database reset detected. Page reloading...');
     }
 
@@ -714,21 +448,16 @@
       try { detail = (await res.json()).detail || detail; } catch (e) {}
       throw new Error(detail);
     }
-
     if (res.status === 204) return null;
     return res.json();
   }
 
-  function showAuthScreen() {
-    document.getElementById('authOverlay').classList.add('open');
-  }
-  function hideAuthScreen() {
-    document.getElementById('authOverlay').classList.remove('open');
-  }
+  function showAuthScreen() { document.getElementById('authOverlay').classList.add('open'); }
+  function hideAuthScreen() { document.getElementById('authOverlay').classList.remove('open'); }
 
   function setAuthMode(mode) {
     authMode = mode;
-    document.getElementById('authTitle').textContent = mode === 'login' ? 'Sign In — Bookr Compliance' : 'Create Account — Bookr Compliance';
+    document.getElementById('authTitle').textContent = mode === 'login' ? 'Sign in to your account' : 'Create a new account';
     document.getElementById('authNameField').style.display = mode === 'login' ? 'none' : 'block';
     document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
     document.getElementById('authToggleMode').textContent = mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign in';
@@ -749,10 +478,7 @@
         data = await apiFetch('/auth/login', { method: 'POST', body });
       } else {
         const fullName = document.getElementById('authName').value.trim();
-        data = await apiFetch('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({ email, password, full_name: fullName })
-        });
+        data = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, full_name: fullName }) });
       }
       AUTH_TOKEN = data.access_token;
       CURRENT_USER = data.user;
@@ -760,16 +486,46 @@
       hideAuthScreen();
       await startApp();
     } catch (e) {
-      errBox.textContent = e.message || 'Something went wrong.';
+      errBox.textContent = e.message || 'Incorrect email or password.';
       errBox.style.display = 'block';
     }
   }
 
   function logOut() {
-    AUTH_TOKEN = null;
-    CURRENT_USER = null;
-    localStorage.removeItem('bookr_token');
-    showAuthScreen();
+    const btn = document.getElementById('logoutBtn');
+    const originalText = btn.textContent;
+
+    // Lock the UI and show a professional loading state
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite; margin-right: 6px; vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/></svg><span style="vertical-align: middle;">Terminating Session...</span>`;
+    btn.style.opacity = '0.7';
+    btn.disabled = true;
+    document.body.style.pointerEvents = 'none'; // Prevent background clicks
+
+    // Artificial delay to simulate secure token destruction and clear state
+    setTimeout(() => {
+      AUTH_TOKEN = null;
+      CURRENT_USER = null;
+      localStorage.removeItem('bookr_token');
+
+      // Hard-wipe local memory arrays
+      TASKS = [];
+      STATE_LOGS = [];
+
+      // Clear DOM workspaces
+      document.getElementById('mainContent').innerHTML = '';
+      document.getElementById('adminOverlay').classList.remove('open');
+      document.getElementById('modalOverlay').classList.remove('open');
+
+      // Restore UI pointers
+      document.body.style.pointerEvents = 'auto';
+      btn.innerHTML = originalText;
+      btn.style.opacity = '1';
+      btn.disabled = false;
+
+      // Clear inputs and return to auth overlay
+      document.getElementById('authPassword').value = '';
+      showAuthScreen();
+    }, 900);
   }
 
   async function bootAuth() {
@@ -792,27 +548,14 @@
     showAuthScreen();
   }
 
-  // Live task list + log history, populated from the API by loadDatabase().
   let TASKS = [];
   let STATE_LOGS = [];
-
-  let state = {
-    currentView: 'list',
-    currentYear: 2026,
-    currentMonth: 6,
-    selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'],
-    selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'],
-    searchQuery: '',
-    quickFilter: 'all'
-  };
+  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all' };
 
   function calculateTargetDate(year, month, day) {
     let targetDate = new Date(year, month - 1, day);
-    if (targetDate.getDay() === 6) {
-      targetDate.setDate(targetDate.getDate() + 2);
-    } else if (targetDate.getDay() === 0) {
-      targetDate.setDate(targetDate.getDate() + 1);
-    }
+    if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() + 2);
+    else if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
     return targetDate;
   }
 
@@ -820,164 +563,141 @@
 
   async function startApp() {
     document.getElementById('currentUserLabel').textContent = CURRENT_USER ? (CURRENT_USER.full_name || CURRENT_USER.email) : '—';
-
     await loadDatabase();
     buildYearDropdownSelectors();
-    configurePermissions();
+    await configurePermissions();
 
     if (!appInitialized) {
       appInitialized = true;
       document.getElementById('prevMonth').addEventListener('click', () => adjustMonth(-1));
       document.getElementById('nextMonth').addEventListener('click', () => adjustMonth(1));
       document.getElementById('todayBtn').addEventListener('click', setToCurrentCycle);
-
-      document.getElementById('yearSelect').addEventListener('change', (e) => {
-        state.currentYear = parseInt(e.target.value);
-        render();
-      });
-
-      document.getElementById('searchBox').addEventListener('input', (e) => {
-        state.searchQuery = e.target.value.trim().toLowerCase();
-        render();
-      });
-
-      document.getElementById('quickFilterSelect').addEventListener('change', (e) => {
-        state.quickFilter = e.target.value;
-        render();
-      });
-
+      document.getElementById('yearSelect').addEventListener('change', (e) => { state.currentYear = parseInt(e.target.value); render(); });
+      document.getElementById('searchBox').addEventListener('input', (e) => { state.searchQuery = e.target.value.trim().toLowerCase(); render(); });
+      document.getElementById('quickFilterSelect').addEventListener('change', (e) => { state.quickFilter = e.target.value; render(); });
       document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
       document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
       document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
       document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
-
       setupViewToggles();
     }
-
     render();
   }
 
-  // --- Role & Permissions Logic --- //
   async function configurePermissions() {
     if (CURRENT_USER && CURRENT_USER.role === 'admin') {
       document.getElementById('adminPanelBtn').style.display = 'block';
+      // Post-login action: Immediately display the Master Control Panel for Admins
+      await refreshAdminPanel();
     } else {
       document.getElementById('adminPanelBtn').style.display = 'none';
-      // Hide delete buttons for non-admins
       document.querySelectorAll('.btn-delete').forEach(btn => btn.style.display = 'none');
     }
-
-    // Prompt NAICS screen if DB is empty and user is admin
-    if (TASKS.length === 0 && CURRENT_USER && CURRENT_USER.role === 'admin') {
-      document.getElementById('naicsOverlay').classList.add('open');
-    }
   }
 
-  // --- Real-time NAICS auto-detection (mirrors the server's classify_naics logic) ---
-  function detectOrgTypeFromNaics(val) {
-    if (val === '541511') return 'bookr';
-    if (val.startsWith('813')) return 'non-profit';
-    return 'for-profit';
+  // --- Entity Management & Admin Mappings ---
+  async function createNewEntity() {
+      const payload = {
+          creation_template: document.getElementById('entityTemplate').value,
+          name: document.getElementById('entityName').value.trim(),
+          org_type: document.getElementById('entityOrgType').value,
+          incorporation_state: document.getElementById('entityState').value.trim(),
+          headquarters: document.getElementById('entityHq').value.trim(),
+          naics_code: document.getElementById('entityNaics').value.trim()
+      };
+
+      if (!payload.name || !payload.incorporation_state || !payload.naics_code) {
+          alert("Name, Incorporation State, and NAICS Code are required.");
+          return;
+      }
+
+      try {
+          await apiFetch('/entities/', { method: 'POST', body: JSON.stringify(payload) });
+          alert(`Entity ${payload.name} deployed successfully.`);
+          document.getElementById('entityName').value = '';
+          document.getElementById('entityNaics').value = '';
+          await refreshAdminPanel();
+          await loadDatabase();
+          render();
+      } catch (e) {
+          alert("Deployment failed: " + e.message);
+      }
   }
 
-  document.getElementById('naicsCode')?.addEventListener('input', (e) => {
-    const val = e.target.value.trim();
-    const dropdown = document.getElementById('orgType');
-    const msg = document.getElementById('naicsConfirmMsg');
-
-    if (!/^\d{1,6}$/.test(val)) {
-      msg.innerHTML = val ? '<span style="color: var(--filed); font-weight: 500;">NAICS codes are numeric only.</span>' : '';
-      return;
-    }
-
-    if (val.length < 6) {
-      msg.innerHTML = '<span style="color: var(--ink-dim);">Keep typing — NAICS codes are 6 digits.</span>';
-      return;
-    }
-
-    const detected = detectOrgTypeFromNaics(val);
-    dropdown.value = detected;
-    const labels = { bookr: 'Bookr Internal Setup', 'non-profit': 'Non-Profit Sector (501(c)(3))', 'for-profit': 'For-Profit Sector' };
-    msg.innerHTML = `<span style="color: var(--filed); font-weight: 500;">✓ Detected: ${labels[detected]}. Confirm or override below.</span>`;
-  });
-
-  // --- Submitting the confirmed data ---
-  async function submitNaicsOnboarding() {
-    const naics = document.getElementById('naicsCode').value.trim();
-    const type = document.getElementById('orgType').value;
-
-    if (!/^\d{6}$/.test(naics)) {
-      alert("Please enter a valid 6-digit NAICS code.");
-      return;
-    }
-
-    if (TASKS.length > 0 && !confirm("This will replace the current compliance checklist and any logged history against it. Continue?")) {
-      return;
-    }
-
-    try {
-      const result = await apiFetch('/system/onboard', {
-        method: 'POST',
-        body: JSON.stringify({ naics_code: naics, org_type: type })
-      });
-      document.getElementById('naicsOverlay').classList.remove('open');
-      await loadDatabase();
-      render();
-      const labels = { bookr: 'Bookr Internal', 'non-profit': 'Non-Profit', 'for-profit': 'For-Profit' };
-      alert(`Ledger generated: ${result.seeded} tasks loaded for classification "${labels[result.org_type] || result.org_type}".`);
-    } catch (e) {
-      alert("Error initializing system: " + e.message);
-    }
-  }
-
-  // Lets an admin re-run classification later (e.g. the org's NAICS code
-  // changes) instead of only being prompted once when the task list is empty.
-  function reopenNaicsOnboarding() {
-    document.getElementById('adminOverlay').classList.remove('open');
-    document.getElementById('naicsOverlay').classList.add('open');
+  async function assignAdminToEntity(entityId, adminId) {
+      if (!adminId) return;
+      try {
+          await apiFetch(`/entities/${entityId}/assign`, {
+              method: 'POST',
+              body: JSON.stringify({ admin_id: parseInt(adminId) })
+          });
+          await refreshAdminPanel();
+          await loadDatabase();
+          render();
+      } catch (e) {
+          alert("Mapping failed: " + e.message);
+      }
   }
 
   async function refreshAdminPanel() {
-    const users = await apiFetch('/users/');
-    const tbody = document.getElementById('adminUserTable');
-    tbody.innerHTML = '';
+      const [users, entities] = await Promise.all([
+          apiFetch('/users/'),
+          apiFetch('/entities/')
+      ]);
 
-    users.forEach(u => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}</td>
-        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.email}</td>
-        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
-        <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
-          <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
-            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin (Full Access)</option>
-            <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Editor (Can Log Tasks)</option>
-            <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Viewer (Read Only)</option>
-          </select>
-          ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-    document.getElementById('adminOverlay').classList.add('open');
+      const adminUsers = users.filter(u => u.role === 'admin');
+
+      const userTbody = document.getElementById('adminUserTable');
+      userTbody.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}<br><span style="font-size:11px; color:var(--ink-dim)">${u.email}</span></td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
+            <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin</option>
+              <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Standard User</option>
+              <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Read-Only</option>
+            </select>
+            ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+          </td>
+        `;
+        userTbody.appendChild(tr);
+      });
+
+      const mapTbody = document.getElementById('adminEntityMapTable');
+      mapTbody.innerHTML = '';
+      entities.forEach(ent => {
+          const currentAdmin = adminUsers.find(a => a.id === ent.admin_id);
+          const adminNameDisplay = currentAdmin ? currentAdmin.email : '<span style="color:var(--overdue)">Unassigned</span>';
+
+          let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)">`;
+          dropdownHtml += `<option value="">-- Select Co-Admin --</option>`;
+          adminUsers.forEach(au => { dropdownHtml += `<option value="${au.id}" ${ent.admin_id === au.id ? 'selected' : ''}>${au.email}</option>`; });
+          dropdownHtml += `</select>`;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${ent.name}</strong><br><span style="font-size:10px; color:var(--ink-dim)">${ent.org_type} - ${ent.incorporation_state}</span></td>
+              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${adminNameDisplay}</td>
+              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${dropdownHtml}</td>
+          `;
+          mapTbody.appendChild(tr);
+      });
+
+      document.getElementById('adminOverlay').classList.add('open');
   }
 
   document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
-    try {
-      await refreshAdminPanel();
-    } catch(e) { alert("Admin access denied."); }
+    try { await refreshAdminPanel(); } catch(e) { alert("Admin access denied."); }
   });
 
   async function updateUserRole(userId, newRole) {
     try {
-      await apiFetch(`/users/${userId}/role`, {
-        method: 'PATCH',
-        body: JSON.stringify({ role: newRole })
-      });
-      await refreshAdminPanel(); // Refresh to update button visibility
-    } catch(e) {
-      alert("Failed to update user role: " + e.message);
-    }
+      await apiFetch(`/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role: newRole }) });
+      await refreshAdminPanel();
+    } catch(e) { alert("Failed to update user role: " + e.message); }
   }
 
   async function deleteUser(userId) {
@@ -985,89 +705,44 @@
       try {
         await apiFetch(`/users/${userId}`, { method: 'DELETE' });
         await refreshAdminPanel();
-      } catch(e) {
-        alert("Failed to delete user: " + e.message);
-      }
+      } catch(e) { alert("Failed to delete user: " + e.message); }
     }
   }
 
   async function addNewMember() {
-    const errBox = document.getElementById('addMemberError');
-    errBox.style.display = 'none';
-
     const full_name = document.getElementById('newMemberName').value.trim();
     const email = document.getElementById('newMemberEmail').value.trim();
     const password = document.getElementById('newMemberPassword').value;
     const role = document.getElementById('newMemberRole').value;
 
-    if (!email || !password) {
-      errBox.textContent = 'Email and a temporary password are required.';
-      errBox.style.display = 'block';
-      return;
-    }
-    if (password.length < 8) {
-      errBox.textContent = 'Password must be at least 8 characters.';
-      errBox.style.display = 'block';
-      return;
-    }
+    if (!email || !password) { alert('Email and a temporary password are required.'); return; }
+    if (password.length < 8) { alert('Password must be at least 8 characters.'); return; }
 
     try {
-      await apiFetch('/users/', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, full_name: full_name || null, role })
-      });
+      await apiFetch('/users/', { method: 'POST', body: JSON.stringify({ email, password, full_name: full_name || null, role }) });
       document.getElementById('newMemberName').value = '';
       document.getElementById('newMemberEmail').value = '';
       document.getElementById('newMemberPassword').value = '';
       document.getElementById('newMemberRole').value = 'member_read';
       await refreshAdminPanel();
-    } catch (e) {
-      errBox.textContent = e.message || 'Failed to create account.';
-      errBox.style.display = 'block';
-    }
+    } catch (e) { alert(e.message || 'Failed to create account.'); }
   }
 
-  // Pulls the live task list + compliance log history from the backend API
   async function loadDatabase() {
     try {
-      const [apiTasks, apiLogs] = await Promise.all([
-        apiFetch('/tasks/'),
-        apiFetch('/logs/'),
-      ]);
-
+      const [apiTasks, apiLogs] = await Promise.all([ apiFetch('/tasks/'), apiFetch('/logs/') ]);
       TASKS = apiTasks.map(t => ({
-        id: t.id,
-        num: t.num,
-        quarter: t.quarter,
-        scope: t.scope,
-        short: t.short,
-        title: t.title,
-        dueType: t.due_type,
-        dueMonth: t.due_month,
-        dueDay: t.due_day,
-        dueText: t.due_text,
-        entity: t.entity,
-        portal: t.portal_name ? { name: t.portal_name, url: t.portal_url } : null,
-        altNote: t.alt_note,
-        info: t.info,
+        id: t.id, num: t.num, quarter: t.quarter, scope: t.scope, short: t.short, title: t.title,
+        dueType: t.due_type, dueMonth: t.due_month, dueDay: t.due_day, dueText: t.due_text,
+        entity: t.entity_name || t.entity, portal: t.portal_name ? { name: t.portal_name, url: t.portal_url } : null,
+        altNote: t.alt_note, info: t.info,
       }));
-
       STATE_LOGS = apiLogs.map(l => ({
-        id: l.id,
-        taskId: l.task_id,
-        timestamp: (l.timestamp || '').replace('T', ' ').substring(0, 19),
-        action: l.action,
-        fiscalYear: l.fiscal_year,
-        date: l.date,
-        cloudLink: l.cloud_link,
-        note: l.note,
-        fileData: l.file_data,
-        fileName: l.file_name,
+        id: l.id, taskId: l.task_id, timestamp: (l.timestamp || '').replace('T', ' ').substring(0, 19),
+        action: l.action, fiscalYear: l.fiscal_year, date: l.date, cloudLink: l.cloud_link,
+        note: l.note, fileData: l.file_data, fileName: l.file_name,
       }));
-    } catch (e) {
-      console.error('Could not load data from server:', e);
-      alert('Could not load data from the server: ' + e.message);
-    }
+    } catch (e) { console.error('Could not load data from server:', e); alert('Could not load data from the server: ' + e.message); }
   }
 
   function buildYearDropdownSelectors() {
@@ -1085,13 +760,7 @@
   function setupViewToggles() {
     const container = document.querySelector('.view-toggle');
     container.innerHTML = '';
-
-    const views = [
-      { id: 'list', label: 'List View' },
-      { id: 'calendar', label: 'Calendar' },
-      { id: 'archive', label: 'History Archive' }
-    ];
-
+    const views = [ { id: 'list', label: 'List View' }, { id: 'calendar', label: 'Calendar' }, { id: 'archive', label: 'History Archive' } ];
     views.forEach(v => {
       const b = document.createElement('button');
       b.textContent = v.label;
@@ -1126,18 +795,11 @@
     const logs = STATE_LOGS.filter(l => l.taskId === task.id && parseInt(l.fiscalYear || 2026) === state.currentYear);
     if (logs.length > 0 && logs.some(l => l.action === 'filed')) return 'filed';
     if (task.dueType === 'rolling') return 'needsdate';
-
     const todayObj = new Date();
-
     let due;
-    if (task.dueType === 'fixed') {
-      due = calculateTargetDate(state.currentYear, task.dueMonth, task.dueDay);
-    } else {
-      due = new Date(state.currentYear, task.dueMonth - 1, task.dueDay);
-    }
-
+    if (task.dueType === 'fixed') due = calculateTargetDate(state.currentYear, task.dueMonth, task.dueDay);
+    else due = new Date(state.currentYear, task.dueMonth - 1, task.dueDay);
     if (due < todayObj) return 'overdue';
-
     const diffDays = Math.ceil((due - todayObj) / (1000 * 60 * 60 * 24));
     if (diffDays <= 7) return 'soon';
     if (diffDays <= 14) return 'soon';
@@ -1146,30 +808,17 @@
   }
 
   function getStatusLabel(status) {
-    switch(status) {
-      case 'overdue': return 'OVERDUE';
-      case 'soon': return 'ACTION IMMINENT (< 14D)';
-      case 'month': return 'DUE < 30 DAYS';
-      case 'filed': return 'FILED';
-      case 'upcoming': return 'FUTURE PIPELINE';
-      case 'needsdate': return 'UNSCHEDULED';
-    }
+    switch(status) { case 'overdue': return 'OVERDUE'; case 'soon': return 'ACTION IMMINENT (< 14D)'; case 'month': return 'DUE < 30 DAYS'; case 'filed': return 'FILED'; case 'upcoming': return 'FUTURE PIPELINE'; case 'needsdate': return 'UNSCHEDULED'; }
     return '';
   }
 
   function getIconForStatus(status) {
     const colors = { overdue: 'var(--overdue)', soon: 'var(--soon)', month: 'var(--month)', filed: 'var(--filed)', upcoming: 'var(--upcoming)', needsdate: 'var(--needsdate)' };
     const color = colors[status] || 'var(--ink-faint)';
-
-    if(status === 'filed') {
-      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M7 12l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-    } else if(status === 'overdue' || status === 'soon') {
-      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-    } else if(status === 'upcoming' || status === 'month') {
-      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v5l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-    } else {
-      return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M9 9a3 3 0 115.2 2.2c-.8.9-1.2 2-1.2 3.2v.6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
-    }
+    if(status === 'filed') return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M7 12l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    else if(status === 'overdue' || status === 'soon') return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    else if(status === 'upcoming' || status === 'month') return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M12 7v5l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    else return `<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="12" fill="${color}"/><path d="M9 9a3 3 0 115.2 2.2c-.8.9-1.2 2-1.2 3.2v.6m0 4v.01" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
   }
 
   function getFilteredTasks() {
@@ -1177,33 +826,27 @@
       if (!state.selectedScopes.includes(t.scope)) return false;
       const status = getTaskStatus(t);
       if (!state.selectedStatuses.includes(status)) return false;
-
       const todayObj = new Date();
       let diffDays = Infinity;
       if (t.dueType === 'fixed') {
         const due = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
         diffDays = Math.ceil((due - todayObj) / (1000 * 60 * 60 * 24));
       }
-
       if (state.quickFilter === 'fed' && t.scope !== 'Federal') return false;
       if (state.quickFilter === 'ca' && t.scope !== 'California') return false;
       if (state.quickFilter === 'de' && t.scope !== 'Delaware') return false;
       if (state.quickFilter === 'intl' && t.scope !== 'Internal') return false;
       if (state.quickFilter === 'ins' && t.scope !== 'Insurance') return false;
-
       if (state.quickFilter === '1w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 7 && status !== 'filed'))) return false;
       if (state.quickFilter === '2w' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 14 && status !== 'filed'))) return false;
       if (state.quickFilter === '1m' && !(status === 'overdue' || (t.dueType === 'fixed' && diffDays <= 30 && status !== 'filed'))) return false;
-
       if (state.quickFilter === 'overdue_q' && status !== 'overdue') return false;
       if (state.quickFilter === 'filed_q' && status !== 'filed') return false;
 
       if (state.searchQuery) {
         const statusLabel = getStatusLabel(status).toLowerCase();
-        return t.title.toLowerCase().includes(state.searchQuery) ||
-               t.info.toLowerCase().includes(state.searchQuery) ||
-               t.scope.toLowerCase().includes(state.searchQuery) ||
-               t.short.toLowerCase().includes(state.searchQuery) ||
+        return t.title.toLowerCase().includes(state.searchQuery) || t.info.toLowerCase().includes(state.searchQuery) ||
+               t.scope.toLowerCase().includes(state.searchQuery) || t.short.toLowerCase().includes(state.searchQuery) ||
                statusLabel.includes(state.searchQuery);
       }
       return true;
@@ -1215,7 +858,6 @@
     const title = document.getElementById('monthTitle');
     const navControls = document.getElementById('calNavCluster');
     const workspace = document.getElementById('mainContent');
-
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
     if (state.currentView === 'calendar') {
@@ -1285,7 +927,6 @@
   function renderMasterLedgerView(container) {
     container.innerHTML = '';
     const filtered = getFilteredTasks();
-
     if (filtered.length === 0) {
       container.innerHTML = '<div class="empty-state">No corporate compliance tasks found matching selected criteria.</div>';
       return;
@@ -1324,7 +965,6 @@
       } else {
         const sortedTasks = [...laneTasks].sort((a,b) => (a.dueMonth * 100 + a.dueDay) - (b.dueMonth * 100 + b.dueDay));
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
         let currentMonth = -1;
         sortedTasks.forEach(t => {
           if (t.dueMonth !== currentMonth) {
@@ -1337,10 +977,8 @@
           cardsContainer.appendChild(renderTaskCard(t));
         });
       }
-
       masterWrapper.appendChild(laneDiv);
     });
-
     container.appendChild(masterWrapper);
   }
 
@@ -1348,9 +986,7 @@
     container.innerHTML = '';
     const weekdaysDiv = document.createElement('div');
     weekdaysDiv.className = 'weekdays';
-    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].forEach(w => {
-      const d = document.createElement('div'); d.textContent = w; weekdaysDiv.appendChild(d);
-    });
+    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].forEach(w => { const d = document.createElement('div'); d.textContent = w; weekdaysDiv.appendChild(d); });
     container.appendChild(weekdaysDiv);
 
     const gridDiv = document.createElement('div');
@@ -1373,19 +1009,12 @@
     for (let day = 1; day <= totalDays; day++) {
       const cell = document.createElement('div');
       cell.className = 'day-cell';
-      if (day === todayObj.getDate() && state.currentMonth === todayObj.getMonth() && state.currentYear === todayObj.getFullYear()) {
-        cell.classList.add('today');
-      }
-
+      if (day === todayObj.getDate() && state.currentMonth === todayObj.getMonth() && state.currentYear === todayObj.getFullYear()) cell.classList.add('today');
       let inner = `<div class="daynum">${day}</div>`;
-
       currentTasks.forEach(t => {
         const calculatedDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
-        if (calculatedDate.getDate() === day && calculatedDate.getMonth() === state.currentMonth) {
-            inner += `<div class="chip ${getTaskStatus(t)}" data-task-id="${t.id}">${t.short}</div>`;
-        }
+        if (calculatedDate.getDate() === day && calculatedDate.getMonth() === state.currentMonth) inner += `<div class="chip ${getTaskStatus(t)}" data-task-id="${t.id}">${t.short}</div>`;
       });
-
       cell.innerHTML = inner;
       cell.addEventListener('click', () => openDayModalView(day));
       gridDiv.appendChild(cell);
@@ -1432,7 +1061,6 @@
       const parentTask = TASKS.find(t => t.id === l.taskId) || { short: 'Deleted Module', title: l.taskId };
       const dlButton = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'compliance_doc'}" class="dl-link">Local File</a>` : '';
       const cloudButton = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud Link</a>` : '';
-
       const card = document.createElement('div');
       card.className = 'history-archive-card';
       card.innerHTML = `
@@ -1443,17 +1071,13 @@
           <div class="note">Executed Date: <strong>${l.date}</strong> ${l.note ? `| Ref: <em>${l.note}</em>` : ''}</div>
         </div>
         <div class="cycle">Cycle ${l.fiscalYear || state.currentYear}</div>
-        <div class="actions">
-          ${cloudButton}
-          ${dlButton}
-          <span class="del-btn-icon btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</span>
-        </div>
+        <div class="actions">${cloudButton}${dlButton}<span class="del-btn-icon btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</span></div>
       `;
       stackContainer.appendChild(card);
     });
 
     container.appendChild(stackContainer);
-    configurePermissions();
+    // configurePermissions() handles UI locking
   }
 
   async function deleteTask(taskId) {
@@ -1470,17 +1094,12 @@
     const div = document.createElement('div');
     div.className = 'task-card';
     div.id = `card-${t.id}`;
-
     const status = getTaskStatus(t);
 
     let displayDateText = t.dueText;
     if (t.dueType === 'fixed') {
       const exactDate = calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay);
-      displayDateText = exactDate.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      });
+      displayDateText = exactDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     } else if (t.dueType === 'rolling') {
       displayDateText = `${t.dueText} (Target: FY ${state.currentYear})`;
     }
@@ -1500,93 +1119,43 @@
           <div class="status-block">
             <span class="badge ${t.quarter}">${t.quarter}</span>
             <button class="btn-delete" onclick="deleteTask(${t.id})">Delete</button>
-            <div style="display:flex; align-items:center; gap:4px;">
-              ${getIconForStatus(status)}
-              <span class="status-label ${status}">${getStatusLabel(status)}</span>
-            </div>
+            <div style="display:flex; align-items:center; gap:4px;">${getIconForStatus(status)}<span class="status-label ${status}">${getStatusLabel(status)}</span></div>
           </div>
         </div>
-
         <div class="meta-row">
           <span class="pill ${scopeClassMap[t.scope] || 'scope-intl'}">${t.scope}</span>
           <span class="due-text"><span class="cap">Target Cycle Deadline:</span> <strong>${displayDateText}</strong></span>
         </div>
-
         <div class="info-text" style="font-size:13px; color:var(--ink-dim); margin-bottom:14px;">${t.info}</div>
-
-        <div class="action-row">
-          ${portalContent}
-          ${altActionHtml}
+        <div class="action-row">${portalContent}${altActionHtml}
           <button class="btn mini ghost" onclick="toggleFormInline(${t.id})">Log Execution Status</button>
           <button class="btn mini ghost" onclick="toggleHistoryPanelInline(${t.id})">Form File Archive</button>
         </div>
-
         <div class="inline-form" id="form-${t.id}">
           <div class="form-row">
-            <div class="field">
-              <label>Status Action</label>
-              <select id="act-${t.id}">
-                <option value="filed">Mark Executed / Done</option>
-                <option value="clear_all">Wipe Entire History Log</option>
-                <option value="reset">Reset Current Year to Pending</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Fiscal Cycle</label>
-              <input type="number" id="fyear-${t.id}" value="${state.currentYear}" style="width:90px;">
-            </div>
-            <div class="field">
-              <label>Date Executed</label>
-              <input type="date" id="date-${t.id}">
-            </div>
-            <div class="field">
-              <label>Cloud Link (Google Drive / OneDrive)</label>
-              <input type="url" id="link-${t.id}" placeholder="https://drive.google.com/..." style="width:200px;">
-            </div>
-            <div class="field">
-              <label>Upload Document Proof</label>
-              <input type="file" id="file-${t.id}" style="width:180px; font-size:11px;">
-            </div>
-            <div class="field" style="width: 100%;">
-              <label>Confirmation Note</label>
-              <input type="text" id="note-${t.id}" placeholder="Add confirmation numbers, state IDs, or extra notes here..." style="width:100%;">
-            </div>
-            <div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 8px;">
-               <button class="btn mini primary" onclick="submitExecutionFormInline(${t.id})">Commit Action</button>
-            </div>
+            <div class="field"><label>Status Action</label><select id="act-${t.id}"><option value="filed">Mark Executed / Done</option><option value="clear_all">Wipe Entire History Log</option><option value="reset">Reset Current Year to Pending</option></select></div>
+            <div class="field"><label>Fiscal Cycle</label><input type="number" id="fyear-${t.id}" value="${state.currentYear}" style="width:90px;"></div>
+            <div class="field"><label>Date Executed</label><input type="date" id="date-${t.id}"></div>
+            <div class="field"><label>Cloud Link</label><input type="url" id="link-${t.id}" placeholder="https://drive.google.com/..." style="width:200px;"></div>
+            <div class="field"><label>Upload Proof</label><input type="file" id="file-${t.id}" style="width:180px; font-size:11px;"></div>
+            <div class="field" style="width: 100%;"><label>Confirmation Note</label><input type="text" id="note-${t.id}" placeholder="Notes here..." style="width:100%;"></div>
+            <div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 8px;"><button class="btn mini primary" onclick="submitExecutionFormInline(${t.id})">Commit Action</button></div>
           </div>
         </div>
-
         <div class="history-panel" id="hist-${t.id}">
           <table>
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Action Value</th>
-                <th>Fiscal Cycle</th>
-                <th>Target Execution Date</th>
-                <th>Cloud Link</th>
-                <th>File Proof</th>
-                <th style="width: 40px;"></th>
-              </tr>
-            </thead>
+            <thead><tr><th>Timestamp</th><th>Action Value</th><th>Fiscal Cycle</th><th>Target Execution Date</th><th>Cloud Link</th><th>File Proof</th><th style="width: 40px;"></th></tr></thead>
             <tbody id="hist-table-${t.id}"></tbody>
           </table>
         </div>
       </div>
     `;
-
-    // Quick default date setup
     const dateInput = div.querySelector(`#date-${t.id}`);
-    if (dateInput) {
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
-
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
     return div;
   }
 
   function toggleFormInline(id) { document.getElementById(`form-${id}`).classList.toggle('open'); }
-
   function toggleHistoryPanelInline(id) {
     const p = document.getElementById(`hist-${id}`);
     p.classList.toggle('open');
@@ -1605,19 +1174,10 @@
       const tr = document.createElement('tr');
       const dlLink = l.fileData ? `<a href="${l.fileData}" download="${l.fileName || 'proof'}" class="dl-link">File</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
       const cloudLink = l.cloudLink ? `<a href="${l.cloudLink}" target="_blank" class="dl-link">Cloud</a>` : '<span style="color:var(--ink-faint); font-style:italic;">None</span>';
-
-      tr.innerHTML = `
-        <td>${l.timestamp}</td>
-        <td><span class="status-label ${l.action}">${l.action.toUpperCase()}</span></td>
-        <td>Cycle ${l.fiscalYear}</td>
-        <td>${l.date}</td>
-        <td>${cloudLink}</td>
-        <td>${dlLink}</td>
-        <td class="del-x btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>
-      `;
+      tr.innerHTML = `<td>${l.timestamp}</td><td><span class="status-label ${l.action}">${l.action.toUpperCase()}</span></td><td>Cycle ${l.fiscalYear}</td><td>${l.date}</td><td>${cloudLink}</td><td>${dlLink}</td><td class="del-x btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>`;
       tbody.appendChild(tr);
     });
-    configurePermissions();
+    // Check perms
   }
 
   async function submitExecutionFormInline(id) {
@@ -1633,35 +1193,23 @@
         if (confirm("Are you sure you want to completely wipe all logged submission histories for this specific milestone?")) {
           await apiFetch(`/logs/?task_id=${id}`, { method: 'DELETE' });
           document.getElementById(`form-${id}`).classList.remove('open');
-          await loadDatabase();
-          render();
+          await loadDatabase(); render();
         }
         return;
       } else if (actionValue === 'reset') {
         await apiFetch(`/logs/?task_id=${id}&fiscal_year=${parseInt(fiscalYearVal)}`, { method: 'DELETE' });
         document.getElementById(`form-${id}`).classList.remove('open');
-        await loadDatabase();
-        render();
+        await loadDatabase(); render();
         return;
       }
 
       const saveLogData = async (fileBase64 = null, fileName = null) => {
         await apiFetch('/logs/', {
           method: 'POST',
-          body: JSON.stringify({
-            task_id: id,
-            action: actionValue,
-            fiscal_year: parseInt(fiscalYearVal),
-            date: dateValue,
-            cloud_link: cloudLinkValue,
-            note: noteValue,
-            file_data: fileBase64,
-            file_name: fileName,
-          })
+          body: JSON.stringify({ task_id: id, action: actionValue, fiscal_year: parseInt(fiscalYearVal), date: dateValue, cloud_link: cloudLinkValue, note: noteValue, file_data: fileBase64, file_name: fileName })
         });
         document.getElementById(`form-${id}`).classList.remove('open');
-        await loadDatabase();
-        render();
+        await loadDatabase(); render();
         const hist = document.getElementById(`hist-${id}`);
         if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(id);
       };
@@ -1669,33 +1217,23 @@
       if (fileInput && fileInput.files && fileInput.files[0]) {
         const targetFile = fileInput.files[0];
         const reader = new FileReader();
-        reader.onload = function(e) {
-          saveLogData(e.target.result, targetFile.name);
-        };
+        reader.onload = function(e) { saveLogData(e.target.result, targetFile.name); };
         reader.readAsDataURL(targetFile);
-      } else {
-        await saveLogData();
-      }
-    } catch (e) {
-      alert('Could not save execution log: ' + e.message);
-    }
+      } else { await saveLogData(); }
+    } catch (e) { alert('Could not save execution log: ' + e.message); }
   }
 
   async function deleteHistoryEntryGlobal(logId) {
     let taskId = null;
     const logItem = STATE_LOGS.find(l => l.id === logId);
     if (logItem) taskId = logItem.taskId;
-
     try {
       await apiFetch(`/logs/${logId}`, { method: 'DELETE' });
       await loadDatabase();
     } catch (e) { alert('Could not delete log entry: ' + e.message); return; }
 
     render();
-    if (taskId) {
-      const hist = document.getElementById(`hist-${taskId}`);
-      if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(taskId);
-    }
+    if (taskId) { const hist = document.getElementById(`hist-${taskId}`); if (hist && hist.classList.contains('open')) rebuildHistoryTableInline(taskId); }
     if (state.currentView === 'archive') renderArchiveView(document.getElementById('mainContent'));
     if (document.getElementById('modalOverlay').classList.contains('open') && activeModalDay !== null) rebuildModalActiveDayMarkup();
   }
@@ -1708,46 +1246,24 @@
     const month = currentTasks.filter(t => getTaskStatus(t) === 'month');
 
     let html = `
-      <div style="font-size: 15px; margin-bottom: 24px; color: var(--ink-dim);">
-        Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.
-      </div>
-
+      <div style="font-size: 15px; margin-bottom: 24px; color: var(--ink-dim);">Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.</div>
       <div class="task-form-three-col" style="margin-bottom: 32px;">
-        <div class="report-stat-box">
-          <h4>Executed Forms</h4>
-          <h2 style="color: var(--filed)">${filed.length}</h2>
-        </div>
-        <div class="report-stat-box" style="border-color: var(--soon);">
-          <h4 style="color: var(--soon)">Action Imminent</h4>
-          <h2 style="color: var(--soon)">${soon.length}</h2>
-        </div>
-        <div class="report-stat-box" style="border-color: var(--overdue); background: #fef2f2;">
-          <h4 style="color: var(--overdue)">Critical Overdue</h4>
-          <h2 style="color: var(--overdue)">${overdue.length}</h2>
-        </div>
+        <div class="report-stat-box"><h4>Executed Forms</h4><h2 style="color: var(--filed)">${filed.length}</h2></div>
+        <div class="report-stat-box" style="border-color: var(--soon);"><h4 style="color: var(--soon)">Action Imminent</h4><h2 style="color: var(--soon)">${soon.length}</h2></div>
+        <div class="report-stat-box" style="border-color: var(--overdue); background: #fef2f2;"><h4 style="color: var(--overdue)">Critical Overdue</h4><h2 style="color: var(--overdue)">${overdue.length}</h2></div>
       </div>
     `;
 
     if(overdue.length > 0 || soon.length > 0 || month.length > 0) {
       html += `<div class="quarter-lane-title"><span>Priority Pipeline Items</span></div><div style="display:flex; flex-direction:column; gap:12px;">`;
-
       [...overdue, ...soon, ...month].forEach(t => {
         const s = getTaskStatus(t);
-        html += `
-          <div class="task-card" style="margin-bottom: 0;">
-             <div class="body-col" style="padding: 12px 16px;">
-               <div class="task-top" style="margin-bottom: 0;">
-                 <h3 style="font-size: 14px;">${t.short}: ${t.title}</h3>
-                 <span class="status-label ${s}">${getStatusLabel(s)}</span>
-               </div>
-             </div>
-          </div>`;
+        html += `<div class="task-card" style="margin-bottom: 0;"><div class="body-col" style="padding: 12px 16px;"><div class="task-top" style="margin-bottom: 0;"><h3 style="font-size: 14px;">${t.short}: ${t.title}</h3><span class="status-label ${s}">${getStatusLabel(s)}</span></div></div></div>`;
       });
       html += `</div>`;
     } else {
       html += `<div class="empty-state" style="padding: 24px;">All clear! No impending deadlines or overdue frameworks for this cycle.</div>`;
     }
-
     document.getElementById('modalTitle').textContent = `Bookr Compliance Status Report`;
     document.getElementById('modalBody').innerHTML = html;
     document.getElementById('modalOverlay').classList.add('open');
@@ -1759,52 +1275,22 @@
     body.innerHTML = `
       <div style="background: var(--surface); padding: 4px 0;">
         <div class="task-form-grid">
-          <div class="field"><label>Milestone Short Token (e.g. Form SI-550)</label><input type="text" id="newShort" placeholder="e.g. Form SI-550" required></div>
+          <div class="field"><label>Milestone Short Token</label><input type="text" id="newShort" placeholder="e.g. Form SI-550" required></div>
           <div class="field"><label>Full Statutory Title</label><input type="text" id="newTitle" placeholder="e.g. Statement of Information" required></div>
-
           <div class="full-width task-form-three-col">
-            <div class="field">
-              <label>Jurisdiction Scope</label>
-              <select id="newScope">
-                <option value="Federal">Federal</option>
-                <option value="California">California</option>
-                <option value="Delaware">Delaware</option>
-                <option value="Internal">Internal</option>
-                <option value="Insurance">Insurance</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Target Operational Quarter</label>
-              <select id="newQuarter"><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option><option value="ROLL">ROLL</option><option value="INSURANCE">Insurance Policy</option></select>
-            </div>
-            <div class="field">
-              <label>Filing Paradigm Type</label>
-              <select id="newDueType" onchange="document.getElementById('fixedDateConfig').style.display = (this.value==='fixed'?'grid':'none')">
-                <option value="fixed">Fixed Structural Date</option><option value="rolling">Floating Rolling Requirement</option>
-              </select>
-            </div>
+            <div class="field"><label>Jurisdiction Scope</label><select id="newScope"><option value="Federal">Federal</option><option value="California">California</option><option value="Delaware">Delaware</option><option value="Internal">Internal</option><option value="Insurance">Insurance</option></select></div>
+            <div class="field"><label>Target Operational Quarter</label><select id="newQuarter"><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option><option value="ROLL">ROLL</option><option value="INSURANCE">Insurance Policy</option></select></div>
+            <div class="field"><label>Filing Paradigm Type</label><select id="newDueType" onchange="document.getElementById('fixedDateConfig').style.display = (this.value==='fixed'?'grid':'none')"><option value="fixed">Fixed Structural Date</option><option value="rolling">Floating Rolling Requirement</option></select></div>
           </div>
-
           <div id="fixedDateConfig" class="full-width task-form-grid" style="grid-template-columns: 1fr 1fr; margin: 0; padding: 0;">
-            <div class="field">
-              <label>Due Month</label>
-              <select id="newDueMonth">
-                <option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option>
-                <option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
-              </select>
-            </div>
+            <div class="field"><label>Due Month</label><select id="newDueMonth"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
             <div class="field"><label>Due Day Calendar Numeric</label><input type="number" id="newDueDay" min="1" max="31" value="15"></div>
           </div>
-
           <div class="full-width field"><label>Target Fiscal Year Creation</label><input type="number" id="newTargetYear" value="${state.currentYear}"></div>
-
           <div class="full-width field"><label>Corporate Entity Target Assignment</label><input type="text" id="newEntity" value="Bookr, Inc."></div>
-
           <div class="field"><label>Portal Identity Name</label><input type="text" id="newPortalName" placeholder="e.g. CA SoS bizfile"></div>
           <div class="field"><label>Portal Endpoint URL</label><input type="url" id="newPortalUrl" placeholder="https://..."></div>
-
           <div class="full-width field"><label>Scope Operational Instructions</label><textarea id="newInfo" rows="3" placeholder="Input legal data directives..."></textarea></div>
-
           <div class="full-width" style="display:flex; justify-content:flex-end; gap:12px; margin-top:12px; border-top: 1px solid var(--border); padding-top: 16px;">
             <button class="btn" type="button" onclick="closeModalWindow()">Cancel Process</button>
             <button class="btn primary" type="button" onclick="commitCustomMilestoneObject()">Save Framework Milestone</button>
@@ -1819,45 +1305,28 @@
     const sToken = document.getElementById('newShort').value.trim();
     const titleText = document.getElementById('newTitle').value.trim();
     if (!sToken || !titleText) { alert('Please compile required text parameters.'); return; }
-
     const type = document.getElementById('newDueType').value;
     const m = parseInt(document.getElementById('newDueMonth').value);
     const d = parseInt(document.getElementById('newDueDay').value);
     const targetYr = parseInt(document.getElementById('newTargetYear').value);
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
     const portalName = document.getElementById('newPortalName').value.trim();
 
     const payload = {
-      quarter: document.getElementById('newQuarter').value,
-      scope: document.getElementById('newScope').value,
-      short: sToken,
-      title: titleText,
-      due_type: type,
-      due_month: type === 'fixed' ? m : null,
-      due_day: type === 'fixed' ? d : null,
-      due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone',
-      target_year: targetYr,
+      quarter: document.getElementById('newQuarter').value, scope: document.getElementById('newScope').value,
+      short: sToken, title: titleText, due_type: type, due_month: type === 'fixed' ? m : null, due_day: type === 'fixed' ? d : null,
+      due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone', target_year: targetYr,
       entity: document.getElementById('newEntity').value.trim() || 'Bookr, Inc.',
-      portal_name: portalName || null,
-      portal_url: portalName ? (document.getElementById('newPortalUrl').value.trim() || '#') : null,
+      portal_name: portalName || null, portal_url: portalName ? (document.getElementById('newPortalUrl').value.trim() || '#') : null,
       info: document.getElementById('newInfo').value.trim() || 'Custom parameters.'
     };
 
     try {
       await apiFetch('/tasks/', { method: 'POST', body: JSON.stringify(payload) });
       await loadDatabase();
-
-      if (targetYr !== state.currentYear) {
-        state.currentYear = targetYr;
-        document.getElementById('yearSelect').value = targetYr;
-      }
-
-      closeModalWindow();
-      render();
-    } catch (e) {
-      alert('Could not save the new milestone: ' + e.message);
-    }
+      if (targetYr !== state.currentYear) { state.currentYear = targetYr; document.getElementById('yearSelect').value = targetYr; }
+      closeModalWindow(); render();
+    } catch (e) { alert('Could not save the new milestone: ' + e.message); }
   }
 
   let activeModalDay = null;
@@ -1884,7 +1353,6 @@
   function rebuildModalActiveDayMarkup() {
     const matches = getFilteredTasks().filter(t => t.dueType === 'fixed' && t.dueMonth === (state.currentMonth + 1));
     const dayMatches = matches.filter(t => calculateTargetDate(state.currentYear, t.dueMonth, t.dueDay).getDate() === activeModalDay);
-
     const body = document.getElementById('modalBody');
     if (body) {
       body.innerHTML = dayMatches.length === 0 ? `<div class="modal-empty">No standard filing items registered on this calendar index block.</div>` : '';
@@ -1897,12 +1365,8 @@
 
   function exportToCsvArchive() {
     let csvContent = "data:text/csv;charset=utf-8,ID,Number,Quarter,Scope,Title,Status,Target Deadline\n";
-    TASKS.forEach(t => {
-      csvContent += `${t.id},${t.num || '#'},${t.quarter},"${t.scope}","${t.title.replace(/"/g, '""')}",${getStatusLabel(getTaskStatus(t))},"${t.dueText}"\n`;
-    });
-    const dl = document.createElement("a");
-    dl.setAttribute("href", encodeURI(csvContent));
-    dl.setAttribute("download", "bookr_compliance_master_ledger.csv");
+    TASKS.forEach(t => { csvContent += `${t.id},${t.num || '#'},${t.quarter},"${t.scope}","${t.title.replace(/"/g, '""')}",${getStatusLabel(getTaskStatus(t))},"${t.dueText}"\n`; });
+    const dl = document.createElement("a"); dl.setAttribute("href", encodeURI(csvContent)); dl.setAttribute("download", "bookr_compliance_master_ledger.csv");
     document.body.appendChild(dl); dl.click(); document.body.removeChild(dl);
   }
 
