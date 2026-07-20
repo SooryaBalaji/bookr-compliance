@@ -1,6 +1,60 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
+from enum import Enum
+
+class USState(str, Enum):
+    ALABAMA = "Alabama"
+    ALASKA = "Alaska"
+    ARIZONA = "Arizona"
+    ARKANSAS = "Arkansas"
+    CALIFORNIA = "California"
+    COLORADO = "Colorado"
+    CONNECTICUT = "Connecticut"
+    DELAWARE = "Delaware"
+    DISTRICT_OF_COLUMBIA = "District of Columbia"
+    FLORIDA = "Florida"
+    GEORGIA = "Georgia"
+    HAWAII = "Hawaii"
+    IDAHO = "Idaho"
+    ILLINOIS = "Illinois"
+    INDIANA = "Indiana"
+    IOWA = "Iowa"
+    KANSAS = "Kansas"
+    KENTUCKY = "Kentucky"
+    LOUISIANA = "Louisiana"
+    MAINE = "Maine"
+    MARYLAND = "Maryland"
+    MASSACHUSETTS = "Massachusetts"
+    MICHIGAN = "Michigan"
+    MINNESOTA = "Minnesota"
+    MISSISSIPPI = "Mississippi"
+    MISSOURI = "Missouri"
+    MONTANA = "Montana"
+    NEBRASKA = "Nebraska"
+    NEVADA = "Nevada"
+    NEW_HAMPSHIRE = "New Hampshire"
+    NEW_JERSEY = "New Jersey"
+    NEW_MEXICO = "New Mexico"
+    NEW_YORK = "New York"
+    NORTH_CAROLINA = "North Carolina"
+    NORTH_DAKOTA = "North Dakota"
+    OHIO = "Ohio"
+    OKLAHOMA = "Oklahoma"
+    OREGON = "Oregon"
+    PENNSYLVANIA = "Pennsylvania"
+    RHODE_ISLAND = "Rhode Island"
+    SOUTH_CAROLINA = "South Carolina"
+    SOUTH_DAKOTA = "South Dakota"
+    TENNESSEE = "Tennessee"
+    TEXAS = "Texas"
+    UTAH = "Utah"
+    VERMONT = "Vermont"
+    VIRGINIA = "Virginia"
+    WASHINGTON = "Washington"
+    WEST_VIRGINIA = "West Virginia"
+    WISCONSIN = "Wisconsin"
+    WYOMING = "Wyoming"
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -23,7 +77,7 @@ class Token(BaseModel):
 class EntityCreate(BaseModel):
     name: str
     org_type: str
-    incorporation_state: str
+    incorporation_state: USState
     headquarters: str
     naics_code: str
     creation_template: str
@@ -42,7 +96,7 @@ class EntityResponse(BaseModel):
 class AssignAdminPayload(BaseModel):
     admin_id: int
 
-# ---------- Tasks ----------
+# Tasks
 class TaskCreate(BaseModel):
     short: str
     title: str
@@ -85,7 +139,7 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ---------- Compliance logs ----------
+#Compliance logs
 class LogCreate(BaseModel):
     task_id: int
     fiscal_year: int

@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
@@ -18,6 +18,7 @@ from app import models, schemas
 from app.auth import hash_password, verify_password, create_access_token, get_current_user
 
 from app.seed_data import (
+    STATE_TASKS_MAP,
     CORE_TASKS,
     CA_FOR_PROFIT_TASKS,
     DELAWARE_CCORP_TASKS,
@@ -250,41 +251,40 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
     entity = models.Entity(
         name=payload.name,
         org_type=payload.org_type,
-        incorporation_state=payload.incorporation_state,
+        incorporation_state=payload.incorporation_state.value,
         headquarters=payload.headquarters,
         naics_code=payload.naics_code
     )
     db.add(entity)
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=409, detail="An organization with this name already exists.")
+    await db.commit()
     await db.refresh(entity)
 
     if payload.creation_template == "bookr":
-        template = CORE_TASKS
+        template = list(CORE_TASKS)
     elif payload.creation_template == "pebble":
-        template = PEBBLE_TASKS
+        template = list(PEBBLE_TASKS)
     else:
         org = payload.org_type.lower()
-        state = payload.incorporation_state.lower()
 
         if "non-profit" in org:
-            template = NON_PROFIT_TASKS
+            template = list(NON_PROFIT_TASKS)
         elif "llc" in org:
-            template = GENERAL_LLC_TASKS
-        elif state == "delaware":
-            template = DELAWARE_CCORP_TASKS
+            template = list(GENERAL_LLC_TASKS)
         else:
-            template = CA_FOR_PROFIT_TASKS
+            template = list(CORE_TASKS)
+
+    # 50-State Rules Engine Injection
+    selected_state = payload.incorporation_state.value
+    if selected_state in STATE_TASKS_MAP:
+        state_specific_tasks = STATE_TASKS_MAP[selected_state]
+        template.extend(state_specific_tasks)
 
     for t in template:
         task_data = t.copy()
         task_data["entity_id"] = entity.id
         task_data["entity_name"] = entity.name
         task_data["entity"] = entity.name
-        task_data["key"] = f"{task_data.get('key', 'task')}_{entity.id}"
+        task_data["key"] = f"{task_data.get('key', 'task')}_{entity.id}_{int(__import__('time').time() * 1000)}"
         db.add(models.Task(is_core=True, deleted=False, **task_data))
 
     await db.commit()
@@ -492,27 +492,17 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
 
 @app.get("/auth/is-initialized")
 async def is_initialized(db: AsyncSession = Depends(get_db)):
-    # Check if any admin exists in the database.
-    # NOTE: use .first() rather than .scalar_one_or_none() here — this is a
-    # simple existence check, and the app allows more than one super_admin
-    # to exist (via role promotion). scalar_one_or_none() raises
-    # MultipleResultsFound as soon as a second super_admin is created, which
-    # crashes this endpoint with an unhandled 500 (plain-text, not JSON),
-    # surfacing to the frontend as a generic "Request failed" error.
-    result = await db.execute(select(models.User.id).where(models.User.role == "super_admin").limit(1))
-    admin_exists = result.first() is not None
+    result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
+    admin_exists = result.scalar_one_or_none() is not None
     return {"initialized": admin_exists}
 
 @app.patch("/tasks/{task_id}")
-async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db),
-                      editor: models.User = Depends(get_current_editor)):
+async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.Task).where(models.Task.id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-
-    await verify_org_access(db, editor, task.entity_id)
 
     task.due_type = update_data.due_type
     task.due_month = update_data.due_month

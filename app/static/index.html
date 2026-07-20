@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght=0,9..144,300..600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght=0,9..144,300..600;1,9..144,400&family=IBM+Plex+Mono:wght=400;500&family=Inter:wght=400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
   <style>
@@ -69,10 +69,10 @@
     .unsched-empty { font-size: 12px; color: var(--ink-faint); font-style: italic; }
 
     .main-panel { flex: 1; display: flex; flex-direction: column; }
-    .control-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; flex-direction: column; gap: 16px; }
-    .top-bar-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .header-title-cluster h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; white-space: nowrap; }
-    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .control-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; flex-direction: column; gap: 16px; }
+    .top-bar-row { display: flex; justify-content: space-between; align-items: center; }
+    .header-title-cluster h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+    .toolbar { display: flex; align-items: center; gap: 12px; }
     .view-toggle { display: flex; gap: 8px; }
 
     .view-toggle button, .nav-cluster button, .btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink); padding: 6px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
@@ -272,7 +272,62 @@
                    <option value="s-corp">S-Corporation</option>
                 </select>
               </div>
-              <div class="field"><label>Incorporation State</label><input type="text" id="entityState" placeholder="e.g. Delaware"></div>
+              <div class="field">
+                <label>Incorporation State</label>
+                <select id="entityState">
+                  <option value="Delaware">Delaware</option>
+                  <option value="California">California</option>
+                  <option value="Alabama">Alabama</option>
+                  <option value="Alaska">Alaska</option>
+                  <option value="Arizona">Arizona</option>
+                  <option value="Arkansas">Arkansas</option>
+                  <option value="Colorado">Colorado</option>
+                  <option value="Connecticut">Connecticut</option>
+                  <option value="District of Columbia">District of Columbia</option>
+                  <option value="Florida">Florida</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Hawaii">Hawaii</option>
+                  <option value="Idaho">Idaho</option>
+                  <option value="Illinois">Illinois</option>
+                  <option value="Indiana">Indiana</option>
+                  <option value="Iowa">Iowa</option>
+                  <option value="Kansas">Kansas</option>
+                  <option value="Kentucky">Kentucky</option>
+                  <option value="Louisiana">Louisiana</option>
+                  <option value="Maine">Maine</option>
+                  <option value="Maryland">Maryland</option>
+                  <option value="Massachusetts">Massachusetts</option>
+                  <option value="Michigan">Michigan</option>
+                  <option value="Minnesota">Minnesota</option>
+                  <option value="Mississippi">Mississippi</option>
+                  <option value="Missouri">Missouri</option>
+                  <option value="Montana">Montana</option>
+                  <option value="Nebraska">Nebraska</option>
+                  <option value="Nevada">Nevada</option>
+                  <option value="New Hampshire">New Hampshire</option>
+                  <option value="New Jersey">New Jersey</option>
+                  <option value="New Mexico">New Mexico</option>
+                  <option value="New York">New York</option>
+                  <option value="North Carolina">North Carolina</option>
+                  <option value="North Dakota">North Dakota</option>
+                  <option value="Ohio">Ohio</option>
+                  <option value="Oklahoma">Oklahoma</option>
+                  <option value="Oregon">Oregon</option>
+                  <option value="Pennsylvania">Pennsylvania</option>
+                  <option value="Rhode Island">Rhode Island</option>
+                  <option value="South Carolina">South Carolina</option>
+                  <option value="South Dakota">South Dakota</option>
+                  <option value="Tennessee">Tennessee</option>
+                  <option value="Texas">Texas</option>
+                  <option value="Utah">Utah</option>
+                  <option value="Vermont">Vermont</option>
+                  <option value="Virginia">Virginia</option>
+                  <option value="Washington">Washington</option>
+                  <option value="West Virginia">West Virginia</option>
+                  <option value="Wisconsin">Wisconsin</option>
+                  <option value="Wyoming">Wyoming</option>
+                </select>
+              </div>
               <div class="field"><label>NAICS Code</label><input type="text" id="entityNaics" placeholder="6-digit code"></div>
             </div>
             <div class="field full-width"><label>Headquarters Location</label><input type="text" id="entityHq" placeholder="City, State"></div>
@@ -334,7 +389,7 @@
         <button class="btn mini ghost" id="adminPanelBtn" style="width:100%; margin-top:6px; display:none;">Admin Settings</button>
       </div>
 
-      <!-- Workspace Switcher Block -->
+      <!-- NEW: Workspace Switcher Block -->
       <div class="sidebar-section">
         <h4>Active Workspace</h4>
         <div id="entitySwitcherList" style="display: flex; flex-direction: column; gap: 6px;"></div>
@@ -356,46 +411,42 @@
 
     <div class="main-panel">
       <div class="control-header">
-        <!-- Row 1: Title and Search/Filters -->
         <div class="top-bar-row">
           <div class="header-title-cluster">
             <h2 id="monthTitle">Corporate Framework View</h2>
           </div>
-          <div class="search-group">
-            <select id="quickFilterSelect" style="border-radius: var(--radius) 0 0 var(--radius);">
-              <option value="all">All Filters</option>
-              <optgroup label="Jurisdictions">
-                <option value="fed">Federal Only</option>
-                <option value="ca">California Only</option>
-                <option value="de">Delaware Only</option>
-                <option value="intl">Internal Only</option>
-                <option value="ins">Insurance Only</option>
-              </optgroup>
-              <optgroup label="Timeframes">
-                <option value="1w">Due < 7 Days</option>
-                <option value="2w">Due < 14 Days</option>
-                <option value="1m">Due < 30 Days</option>
-              </optgroup>
-              <optgroup label="Status Check">
-                <option value="overdue_q">Overdue Only</option>
-                <option value="filed_q">Executed Only</option>
-              </optgroup>
-            </select>
-            <input type="text" id="searchBox" placeholder="Search parameters...">
-          </div>
-        </div>
+          <div class="toolbar">
+            <div class="search-group">
+              <select id="quickFilterSelect" style="border-radius: var(--radius) 0 0 var(--radius);">
+                <option value="all">All Filters</option>
+                <optgroup label="Jurisdictions">
+                  <option value="fed">Federal Only</option>
+                  <option value="ca">California Only</option>
+                  <option value="de">Delaware Only</option>
+                  <option value="intl">Internal Only</option>
+                  <option value="ins">Insurance Only</option>
+                </optgroup>
+                <optgroup label="Timeframes">
+                  <option value="1w">Due < 7 Days</option>
+                  <option value="2w">Due < 14 Days</option>
+                  <option value="1m">Due < 30 Days</option>
+                </optgroup>
+                <optgroup label="Status Check">
+                  <option value="overdue_q">Overdue Only</option>
+                  <option value="filed_q">Executed Only</option>
+                </optgroup>
+              </select>
+              <input type="text" id="searchBox" placeholder="Search parameters...">
+            </div>
 
-        <!-- Row 2: View Toggles & Actions with Spacing & Divider -->
-        <div class="top-bar-row" style="border-top: 1px solid var(--border-soft); padding-top: 14px;">
-          <div class="view-toggle"></div>
-          <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="view-toggle"></div>
             <button id="addMilestoneBtn" class="btn small primary" style="display:none;">+ Add Task</button>
             <button id="generateReportBtn" class="btn small primary" style="background:var(--ink); border-color:var(--ink);">Generate Report</button>
+            <button id="exportCsv" class="btn small">Export Ledger</button>
           </div>
         </div>
 
-        <!-- Row 3: Calendar Navigation & Fiscal Cycle Selector -->
-        <div class="top-bar-row" id="calNavCluster" style="justify-content: flex-start; gap: 16px; border-top: 1px solid var(--border-soft); padding-top: 14px;">
+        <div class="top-bar-row" id="calNavCluster" style="justify-content: flex-start; gap: 12px;">
           <div class="nav-cluster" id="calendarControls">
             <button id="prevMonth">Prior</button>
             <button id="todayBtn">Current Cycle</button>
@@ -427,28 +478,6 @@
   const API_BASE = '';
   let CURRENT_USER = null;
 
-  function extractErrorMessage(payload, fallback) {
-    if (!payload) return fallback;
-    const detail = payload.detail;
-    if (!detail) return fallback;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map(err => {
-          if (typeof err === 'string') return err;
-          if (err && typeof err.msg === 'string') {
-            const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : null;
-            return field ? `${field}: ${err.msg}` : err.msg;
-          }
-          return null;
-        })
-        .filter(Boolean)
-        .join(' ') || fallback;
-    }
-    if (typeof detail === 'object' && typeof detail.msg === 'string') return detail.msg;
-    return fallback;
-  }
-
   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
     options.credentials = 'include';
@@ -456,16 +485,13 @@
       headers['Content-Type'] = 'application/json';
     }
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
-    if (res.status === 401 && !path.includes('/auth/login')) {
+    if (res.status === 401) {
       CURRENT_USER = null;
       throw new Error('Session expired. Page reloading...');
     }
     if (!res.ok) {
-      let detail = `Request failed (HTTP ${res.status} on ${path})`;
-      try { detail = extractErrorMessage(await res.json(), detail); } catch (e) {}
-      if (res.status === 401 && path.includes('/auth/login')) {
-        detail = 'Incorrect email or password. Please check your credentials and try again.';
-      }
+      let detail = 'Request failed';
+      try { detail = (await res.json()).detail || detail; } catch (e) {}
       throw new Error(detail);
     }
     if (res.status === 204) return null;
@@ -489,7 +515,7 @@
       hideAuthScreen();
       await startApp();
     } catch (e) {
-      errBox.textContent = e.message || 'Incorrect email or password. Please check your credentials and try again.';
+      errBox.textContent = e.message || 'Incorrect email or password.';
       errBox.style.display = 'block';
     }
   }
@@ -551,10 +577,10 @@
   }
 
   async function checkSystemStatus() {
-    const initBtn = document.getElementById('authInitBtn');
-    const signInBtn = document.getElementById('authSubmitBtn');
     try {
         const status = await apiFetch('/auth/is-initialized');
+        const initBtn = document.getElementById('authInitBtn');
+        const signInBtn = document.getElementById('authSubmitBtn');
         if (status.initialized) {
             initBtn.style.display = 'none';
             signInBtn.style.display = 'block';
@@ -562,14 +588,7 @@
             initBtn.style.display = 'block';
             signInBtn.style.display = 'none';
         }
-    } catch (e) {
-        console.error("Could not check system status:", e.message);
-        initBtn.style.display = 'none';
-        signInBtn.style.display = 'block';
-        const errBox = document.getElementById('authError');
-        errBox.textContent = 'Could not reach the compliance server. Please verify the backend is running and try again.';
-        errBox.style.display = 'block';
-    }
+    } catch (e) { console.error("Could not check system status:", e); }
   }
 
   async function logOut() {
@@ -581,31 +600,18 @@
     document.body.style.pointerEvents = 'none';
     try { await apiFetch('/auth/logout', { method: 'POST' }); } catch (e) {}
 
-    CURRENT_USER = null;
-    TASKS = [];
-    STATE_LOGS = [];
-    state.activeEntity = '';
-    document.getElementById('mainContent').innerHTML = '';
-    document.getElementById('statsList').innerHTML = '';
-    document.getElementById('scopeList').innerHTML = '';
-    document.getElementById('unschedList').innerHTML = '';
-    document.getElementById('entitySwitcherList').innerHTML = '';
-    document.getElementById('currentUserLabel').textContent = '—';
-    document.getElementById('adminOverlay').classList.remove('open');
-    document.getElementById('modalOverlay').classList.remove('open');
-    document.getElementById('adminPanelBtn').style.display = 'none';
-    document.getElementById('addMilestoneBtn').style.display = 'none';
-    document.getElementById('authEmail').value = '';
-    document.getElementById('authPassword').value = '';
-    document.getElementById('authError').style.display = 'none';
-
-    document.body.style.pointerEvents = 'auto';
-    btn.innerHTML = originalText;
-    btn.style.opacity = '1';
-    btn.disabled = false;
-
-    await checkSystemStatus();
-    showAuthScreen();
+    setTimeout(() => {
+      CURRENT_USER = null; TASKS = []; STATE_LOGS = [];
+      document.getElementById('mainContent').innerHTML = '';
+      document.getElementById('adminOverlay').classList.remove('open');
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.pointerEvents = 'auto';
+      btn.innerHTML = originalText;
+      btn.style.opacity = '1';
+      btn.disabled = false;
+      document.getElementById('authPassword').value = '';
+      showAuthScreen();
+    }, 900);
   }
 
   async function bootAuth() {
@@ -613,22 +619,17 @@
     document.getElementById('authInitBtn').addEventListener('click', registerFirstAdmin);
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
-
+    await checkSystemStatus();
     try {
       CURRENT_USER = await apiFetch('/auth/me');
       hideAuthScreen();
       await startApp();
-      return;
-    } catch (e) {
-      // No valid session
-    }
-    await checkSystemStatus();
-    showAuthScreen();
+    } catch (e) { showAuthScreen(); }
   }
 
   let TASKS = [];
   let STATE_LOGS = [];
-  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: '' };
+  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: 'all' };
 
   function calculateTargetDate(year, month, day) {
     let targetDate = new Date(year, month - 1, day);
@@ -653,6 +654,7 @@
       document.getElementById('yearSelect').addEventListener('change', (e) => { state.currentYear = parseInt(e.target.value); render(); });
       document.getElementById('searchBox').addEventListener('input', (e) => { state.searchQuery = e.target.value.trim().toLowerCase(); render(); });
       document.getElementById('quickFilterSelect').addEventListener('change', (e) => { state.quickFilter = e.target.value; render(); });
+      document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
       document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
       document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
       document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
@@ -672,7 +674,6 @@
       document.querySelectorAll('.btn-delete').forEach(btn => btn.style.display = 'none');
       document.querySelectorAll('.inline-form').forEach(f => f.style.display = 'none');
       document.querySelectorAll('button[onclick^="toggleFormInline"]').forEach(b => b.style.display = 'none');
-      document.querySelectorAll('button[onclick^="openEditTaskModal"]').forEach(b => b.style.display = 'none');
     } else {
       document.getElementById('addMilestoneBtn').style.display = 'block';
     }
@@ -683,7 +684,7 @@
           creation_template: document.getElementById('entityTemplate').value,
           name: document.getElementById('entityName').value.trim(),
           org_type: document.getElementById('entityOrgType').value,
-          incorporation_state: document.getElementById('entityState').value.trim(),
+          incorporation_state: document.getElementById('entityState').value,
           headquarters: document.getElementById('entityHq').value.trim(),
           naics_code: document.getElementById('entityNaics').value.trim()
       };
@@ -824,7 +825,7 @@
   function buildYearDropdownSelectors() {
     const select = document.getElementById('yearSelect');
     select.innerHTML = '';
-    for(let y = 2024; y <= 2050; y++) {
+    for(let y = 2024; y <= 2035; y++) {
       const opt = document.createElement('option');
       opt.value = y;
       opt.textContent = `${y} Fiscal Year`;
@@ -884,7 +885,7 @@
   }
 
   function getStatusLabel(status) {
-    switch(status) { case 'overdue': return 'Overdue'; case 'soon': return 'Action Imminent (< 14 Days)'; case 'month': return 'Due < 30 Days'; case 'filed': return 'Filed'; case 'upcoming': return 'Future Deadline'; case 'needsdate': return 'Unscheduled'; }
+    switch(status) { case 'overdue': return 'Overdue'; case 'soon': return 'Action Imminent (< 14D)'; case 'month': return 'Due < 30 Days'; case 'filed': return 'Filed'; case 'upcoming': return 'Future Deadline'; case 'needsdate': return 'Unscheduled'; }
     return '';
   }
 
@@ -899,7 +900,8 @@
 
   function getFilteredTasks() {
     return TASKS.filter(t => {
-      if (state.activeEntity && t.entity !== state.activeEntity) return false;
+      // Filter out tasks if an entity is selected
+      if (state.activeEntity !== 'all' && t.entity !== state.activeEntity) return false;
 
       if (!state.selectedScopes.includes(t.scope)) return false;
       const status = getTaskStatus(t);
@@ -937,12 +939,17 @@
       container.innerHTML = '';
 
       const uniqueEntities = [...new Set(TASKS.map(t => t.entity))].filter(Boolean);
-      if (uniqueEntities.length === 0) return;
 
-      if (!state.activeEntity || !uniqueEntities.includes(state.activeEntity)) {
-        state.activeEntity = uniqueEntities[0];
-      }
+      // Global Portfolio Button
+      const allBtn = document.createElement('button');
+      allBtn.className = `btn mini ${state.activeEntity === 'all' ? 'primary' : 'ghost'}`;
+      allBtn.style.textAlign = 'left';
+      allBtn.style.padding = '6px 12px';
+      allBtn.textContent = 'Global Portfolio (All)';
+      allBtn.onclick = () => { state.activeEntity = 'all'; render(); };
+      container.appendChild(allBtn);
 
+      // Buttons for each specific entity
       uniqueEntities.forEach(ent => {
         const btn = document.createElement('button');
         btn.className = `btn mini ${state.activeEntity === ent ? 'primary' : 'ghost'}`;
@@ -963,19 +970,19 @@
     const workspace = document.getElementById('mainContent');
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
-    let prefix = state.activeEntity || 'Workspace';
+    let prefix = state.activeEntity === 'all' ? 'Global Portfolio' : state.activeEntity;
 
     if (state.currentView === 'calendar') {
       const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      title.textContent = `${prefix} ${monthNames[state.currentMonth]} ${state.currentYear} Pipeline`;
+      title.textContent = `${prefix} | ${monthNames[state.currentMonth]} ${state.currentYear} Pipeline`;
       navControls.style.display = 'flex';
       renderCalendarGrid(workspace);
     } else if (state.currentView === 'list') {
-      title.textContent = `${prefix} List View (${state.currentYear})`;
+      title.textContent = `${prefix} | Master Ledger (${state.currentYear})`;
       navControls.style.display = 'flex';
       renderMasterLedgerView(workspace);
     } else if (state.currentView === 'archive') {
-      title.textContent = `${prefix} Audit Logs`;
+      title.textContent = `${prefix} | Audit Logs`;
       navControls.style.display = 'none';
       renderArchiveView(workspace);
     }
@@ -1156,8 +1163,9 @@
     const stackContainer = document.createElement('div');
     stackContainer.className = 'history-archive-stack';
 
+    // Apply the entity filter to logs if an active entity is selected
     let logsToRender = STATE_LOGS;
-    if (state.activeEntity) {
+    if (state.activeEntity !== 'all') {
        const activeTaskIds = TASKS.filter(t => t.entity === state.activeEntity).map(t => t.id);
        logsToRender = STATE_LOGS.filter(l => activeTaskIds.includes(l.taskId));
     }
@@ -1375,13 +1383,6 @@
     } else {
       html += `<div class="empty-state" style="padding: 24px;">All clear! No impending deadlines or overdue frameworks for this cycle.</div>`;
     }
-
-    html += `
-      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
-        <button class="btn small primary" onclick="exportToCsvArchive()">Export Ledger to CSV</button>
-      </div>
-    `;
-
     document.getElementById('modalTitle').textContent = `Bookr Compliance Status Report`;
     document.getElementById('modalBody').innerHTML = html;
     document.getElementById('modalOverlay').classList.add('open');

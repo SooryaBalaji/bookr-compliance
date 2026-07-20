@@ -46,7 +46,7 @@ class EntityMember(Base):
 
 
 class OrgSettings(Base):
-    """Legacy singleton for fallback if needed."""
+    #Legacy singleton for fallback if needed
     __tablename__ = "org_settings"
 
     id = Column(Integer, primary_key=True, default=1)
