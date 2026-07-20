@@ -11,9 +11,7 @@
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
   <style>
-    /* =========================================================
-       CSS VARIABLE PATTERNS & THEME DEFINITIONS
-       ========================================================= */
+    /* CSS Variable Patterns & Theme Definitions */
     :root {
       --bg: #fbfbfa;
       --surface: #ffffff;
@@ -205,7 +203,7 @@
 </head>
 <body>
 
-  <!-- Polished Professional Auth Modal -->
+  <!-- Polished Professional Auth Modal (Registration Loophole Removed) -->
   <div class="modal-overlay open" id="authOverlay" style="z-index:999;">
     <div class="modal-container" style="max-width:400px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
 
@@ -219,10 +217,6 @@
         <div id="authError" style="display:none; background:#fef2f2; color:var(--overdue); border:1px solid #fecaca; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:20px; text-align: center;"></div>
 
         <div class="task-form-grid" style="grid-template-columns: 1fr; gap: 18px;">
-          <div class="field" id="authNameField" style="display:none;">
-            <label>Full Name</label>
-            <input type="text" id="authName" placeholder="Jane Smith" style="padding: 10px; font-size: 14px;">
-          </div>
           <div class="field">
             <label>Email Address</label>
             <input type="email" id="authEmail" placeholder="you@bookr.com" style="padding: 10px; font-size: 14px;">
@@ -233,10 +227,6 @@
           </div>
 
           <button class="btn primary" type="button" id="authSubmitBtn" style="margin-top: 12px; padding: 12px; font-size: 14px; width: 100%;">Sign In</button>
-
-          <div style="text-align: center; margin-top: 12px;">
-            <button class="btn ghost" type="button" id="authToggleMode" style="font-size: 13px; color: var(--ink-dim);">Need an account? Register</button>
-          </div>
         </div>
       </div>
 
@@ -292,9 +282,9 @@
             <input type="email" id="newMemberEmail" placeholder="Email address" style="padding:6px; font-size:12px;">
             <input type="password" id="newMemberPassword" placeholder="Temp password" style="padding:6px; font-size:12px;">
             <select id="newMemberRole" style="padding:6px; font-size:12px;">
-              <option value="admin">Co-Admin (Can be assigned 1 Entity)</option>
-              <option value="member_edit">Standard User (Add/Edit/Delete Forms)</option>
-              <option value="member_read">Read-Only User (Viewer Only)</option>
+              <option value="co_admin">Co-Admin (Can oversee multiple entities)</option>
+              <option value="editor">Editor (Can create/edit tasks & logs)</option>
+              <option value="viewer">Viewer (Read-only access)</option>
             </select>
           </div>
           <button class="btn small primary" onclick="addNewMember()">Provision User Account</button>
@@ -312,14 +302,12 @@
             <tbody id="adminUserTable"></tbody>
           </table>
 
-          <!-- Live Admin-to-Entity Mapping Block -->
-          <h4 style="margin-bottom: 12px; font-size: 13px;">Map Co-Admins to Entities (Strict 1-to-1)</h4>
+          <h4 style="margin-bottom: 12px; font-size: 13px;">Assign Users to Entities</h4>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border); background: var(--surface2);">
                 <th style="padding: 8px;">Target Entity</th>
-                <th style="padding: 8px;">Current Oversight Admin</th>
-                <th style="padding: 8px;">Assign / Remap Co-Admin</th>
+                <th style="padding: 8px;">Assign Access</th>
               </tr>
             </thead>
             <tbody id="adminEntityMapTable"></tbody>
@@ -384,7 +372,7 @@
             </div>
 
             <div class="view-toggle"></div>
-            <button id="addMilestoneBtn" class="btn small primary">+ Add Task</button>
+            <button id="addMilestoneBtn" class="btn small primary" style="display:none;">+ Add Task</button>
             <button id="generateReportBtn" class="btn small primary" style="background:var(--ink); border-color:var(--ink);">Generate Report</button>
             <button id="exportCsv" class="btn small">Export Ledger</button>
           </div>
@@ -418,13 +406,10 @@
   </div>
 
   <script>
-  // ===========================================================
-  // AUTH + API CLIENT
-  // ===========================================================
+  // Auth + API Client
   const API_BASE = '';
   let AUTH_TOKEN = localStorage.getItem('bookr_token') || null;
   let CURRENT_USER = null;
-  let authMode = 'login';
 
   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
@@ -455,31 +440,17 @@
   function showAuthScreen() { document.getElementById('authOverlay').classList.add('open'); }
   function hideAuthScreen() { document.getElementById('authOverlay').classList.remove('open'); }
 
-  function setAuthMode(mode) {
-    authMode = mode;
-    document.getElementById('authTitle').textContent = mode === 'login' ? 'Sign in to your account' : 'Create a new account';
-    document.getElementById('authNameField').style.display = mode === 'login' ? 'none' : 'block';
-    document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
-    document.getElementById('authToggleMode').textContent = mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign in';
-    document.getElementById('authError').style.display = 'none';
-  }
-
   async function submitAuthForm() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
     const errBox = document.getElementById('authError');
     errBox.style.display = 'none';
     try {
-      let data;
-      if (authMode === 'login') {
-        const body = new URLSearchParams();
-        body.set('username', email);
-        body.set('password', password);
-        data = await apiFetch('/auth/login', { method: 'POST', body });
-      } else {
-        const fullName = document.getElementById('authName').value.trim();
-        data = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, full_name: fullName }) });
-      }
+      const body = new URLSearchParams();
+      body.set('username', email);
+      body.set('password', password);
+      let data = await apiFetch('/auth/login', { method: 'POST', body });
+
       AUTH_TOKEN = data.access_token;
       CURRENT_USER = data.user;
       localStorage.setItem('bookr_token', AUTH_TOKEN);
@@ -495,41 +466,30 @@
     const btn = document.getElementById('logoutBtn');
     const originalText = btn.textContent;
 
-    // Lock the UI and show a professional loading state
     btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite; margin-right: 6px; vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/></svg><span style="vertical-align: middle;">Terminating Session...</span>`;
     btn.style.opacity = '0.7';
     btn.disabled = true;
-    document.body.style.pointerEvents = 'none'; // Prevent background clicks
+    document.body.style.pointerEvents = 'none';
 
-    // Artificial delay to simulate secure token destruction and clear state
     setTimeout(() => {
       AUTH_TOKEN = null;
       CURRENT_USER = null;
       localStorage.removeItem('bookr_token');
-
-      // Hard-wipe local memory arrays
       TASKS = [];
       STATE_LOGS = [];
-
-      // Clear DOM workspaces
       document.getElementById('mainContent').innerHTML = '';
       document.getElementById('adminOverlay').classList.remove('open');
       document.getElementById('modalOverlay').classList.remove('open');
-
-      // Restore UI pointers
       document.body.style.pointerEvents = 'auto';
       btn.innerHTML = originalText;
       btn.style.opacity = '1';
       btn.disabled = false;
-
-      // Clear inputs and return to auth overlay
       document.getElementById('authPassword').value = '';
       showAuthScreen();
     }, 900);
   }
 
   async function bootAuth() {
-    document.getElementById('authToggleMode').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
     document.getElementById('authSubmitBtn').addEventListener('click', submitAuthForm);
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
@@ -585,17 +545,25 @@
   }
 
   async function configurePermissions() {
-    if (CURRENT_USER && CURRENT_USER.role === 'admin') {
+    // Admin Control Display
+    if (CURRENT_USER && (CURRENT_USER.role === 'super_admin' || CURRENT_USER.role === 'co_admin')) {
       document.getElementById('adminPanelBtn').style.display = 'block';
-      // Post-login action: Immediately display the Master Control Panel for Admins
-      await refreshAdminPanel();
     } else {
       document.getElementById('adminPanelBtn').style.display = 'none';
+    }
+
+    // Strict Viewer UI Lockdown
+    if (CURRENT_USER && CURRENT_USER.role === 'viewer') {
+      document.getElementById('addMilestoneBtn').style.display = 'none';
       document.querySelectorAll('.btn-delete').forEach(btn => btn.style.display = 'none');
+      document.querySelectorAll('.inline-form').forEach(f => f.style.display = 'none');
+      document.querySelectorAll('button[onclick^="toggleFormInline"]').forEach(b => b.style.display = 'none');
+    } else {
+      document.getElementById('addMilestoneBtn').style.display = 'block';
     }
   }
 
-  // --- Entity Management & Admin Mappings ---
+  // Entity Management & Admin Mappings
   async function createNewEntity() {
       const payload = {
           creation_template: document.getElementById('entityTemplate').value,
@@ -619,24 +587,20 @@
           await refreshAdminPanel();
           await loadDatabase();
           render();
-      } catch (e) {
-          alert("Deployment failed: " + e.message);
-      }
+      } catch (e) { alert("Deployment failed: " + e.message); }
   }
 
-  async function assignAdminToEntity(entityId, adminId) {
-      if (!adminId) return;
+  async function assignAdminToEntity(entityId, userId) {
+      if (!userId) return;
       try {
           await apiFetch(`/entities/${entityId}/assign`, {
               method: 'POST',
-              body: JSON.stringify({ admin_id: parseInt(adminId) })
+              body: JSON.stringify({ admin_id: parseInt(userId) })
           });
           await refreshAdminPanel();
           await loadDatabase();
           render();
-      } catch (e) {
-          alert("Mapping failed: " + e.message);
-      }
+      } catch (e) { alert("Mapping failed: " + e.message); }
   }
 
   async function refreshAdminPanel() {
@@ -645,22 +609,21 @@
           apiFetch('/entities/')
       ]);
 
-      const adminUsers = users.filter(u => u.role === 'admin');
-
       const userTbody = document.getElementById('adminUserTable');
       userTbody.innerHTML = '';
       users.forEach(u => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${u.full_name || 'N/A'}<br><span style="font-size:11px; color:var(--ink-dim)">${u.email}</span></td>
-          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role}</strong></td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${u.role.toUpperCase()}</strong></td>
           <td style="padding: 10px; border-bottom: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
             <select onchange="updateUserRole(${u.id}, this.value)" ${u.id === CURRENT_USER.id ? 'disabled' : ''} style="padding:4px; font-size:12px;">
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Co-Admin</option>
-              <option value="member_edit" ${u.role === 'member_edit' ? 'selected' : ''}>Standard User</option>
-              <option value="member_read" ${u.role === 'member_read' ? 'selected' : ''}>Read-Only</option>
+              <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+              <option value="co_admin" ${u.role === 'co_admin' ? 'selected' : ''}>Co-Admin</option>
+              <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
+              <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
             </select>
-            ${u.id !== CURRENT_USER.id && u.role !== 'admin' ? `<button class="btn-delete" style="padding: 4px 8px;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+            ${u.id !== CURRENT_USER.id && u.role !== 'super_admin' ? `<button class="btn-delete" style="padding: 4px 8px; display:inline-block;" onclick="deleteUser(${u.id})">Delete</button>` : ''}
           </td>
         `;
         userTbody.appendChild(tr);
@@ -669,24 +632,21 @@
       const mapTbody = document.getElementById('adminEntityMapTable');
       mapTbody.innerHTML = '';
       entities.forEach(ent => {
-          const currentAdmin = adminUsers.find(a => a.id === ent.admin_id);
-          const adminNameDisplay = currentAdmin ? currentAdmin.email : '<span style="color:var(--overdue)">Unassigned</span>';
-
           let dropdownHtml = `<select style="padding:4px; font-size:12px; max-width:200px;" onchange="assignAdminToEntity(${ent.id}, this.value)">`;
-          dropdownHtml += `<option value="">-- Select Co-Admin --</option>`;
-          adminUsers.forEach(au => { dropdownHtml += `<option value="${au.id}" ${ent.admin_id === au.id ? 'selected' : ''}>${au.email}</option>`; });
+          dropdownHtml += `<option value="">-- Add User to Organization --</option>`;
+          users.forEach(au => { dropdownHtml += `<option value="${au.id}">${au.email} (${au.role})</option>`; });
           dropdownHtml += `</select>`;
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
               <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);"><strong>${ent.name}</strong><br><span style="font-size:10px; color:var(--ink-dim)">${ent.org_type} - ${ent.incorporation_state}</span></td>
-              <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${adminNameDisplay}</td>
               <td style="padding: 10px; border-bottom: 1px solid var(--border-soft);">${dropdownHtml}</td>
           `;
           mapTbody.appendChild(tr);
       });
 
       document.getElementById('adminOverlay').classList.add('open');
+      configurePermissions();
   }
 
   document.getElementById('adminPanelBtn')?.addEventListener('click', async () => {
@@ -723,7 +683,7 @@
       document.getElementById('newMemberName').value = '';
       document.getElementById('newMemberEmail').value = '';
       document.getElementById('newMemberPassword').value = '';
-      document.getElementById('newMemberRole').value = 'member_read';
+      document.getElementById('newMemberRole').value = 'viewer';
       await refreshAdminPanel();
     } catch (e) { alert(e.message || 'Failed to create account.'); }
   }
@@ -980,6 +940,7 @@
       masterWrapper.appendChild(laneDiv);
     });
     container.appendChild(masterWrapper);
+    configurePermissions();
   }
 
   function renderCalendarGrid(container) {
@@ -1077,7 +1038,7 @@
     });
 
     container.appendChild(stackContainer);
-    // configurePermissions() handles UI locking
+    configurePermissions();
   }
 
   async function deleteTask(taskId) {
@@ -1177,7 +1138,7 @@
       tr.innerHTML = `<td>${l.timestamp}</td><td><span class="status-label ${l.action}">${l.action.toUpperCase()}</span></td><td>Cycle ${l.fiscalYear}</td><td>${l.date}</td><td>${cloudLink}</td><td>${dlLink}</td><td class="del-x btn-delete" onclick="deleteHistoryEntryGlobal(${l.id})">&times;</td>`;
       tbody.appendChild(tr);
     });
-    // Check perms
+    configurePermissions();
   }
 
   async function submitExecutionFormInline(id) {
@@ -1269,7 +1230,10 @@
     document.getElementById('modalOverlay').classList.add('open');
   }
 
-  function openAddMilestoneWizard() {
+  async function openAddMilestoneWizard() {
+    const entities = await apiFetch('/entities/');
+    let entityOptions = entities.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+
     document.getElementById('modalTitle').textContent = 'Create Custom Corporate Framework Milestone';
     const body = document.getElementById('modalBody');
     body.innerHTML = `
@@ -1287,7 +1251,7 @@
             <div class="field"><label>Due Day Calendar Numeric</label><input type="number" id="newDueDay" min="1" max="31" value="15"></div>
           </div>
           <div class="full-width field"><label>Target Fiscal Year Creation</label><input type="number" id="newTargetYear" value="${state.currentYear}"></div>
-          <div class="full-width field"><label>Corporate Entity Target Assignment</label><input type="text" id="newEntity" value="Bookr, Inc."></div>
+          <div class="full-width field"><label>Target Entity (Required)</label><select id="newEntityId">${entityOptions}</select></div>
           <div class="field"><label>Portal Identity Name</label><input type="text" id="newPortalName" placeholder="e.g. CA SoS bizfile"></div>
           <div class="field"><label>Portal Endpoint URL</label><input type="url" id="newPortalUrl" placeholder="https://..."></div>
           <div class="full-width field"><label>Scope Operational Instructions</label><textarea id="newInfo" rows="3" placeholder="Input legal data directives..."></textarea></div>
@@ -1304,7 +1268,10 @@
   async function commitCustomMilestoneObject() {
     const sToken = document.getElementById('newShort').value.trim();
     const titleText = document.getElementById('newTitle').value.trim();
-    if (!sToken || !titleText) { alert('Please compile required text parameters.'); return; }
+    const eId = document.getElementById('newEntityId').value;
+    const eName = document.getElementById('newEntityId').options[document.getElementById('newEntityId').selectedIndex].text;
+
+    if (!sToken || !titleText || !eId) { alert('Please compile required text parameters and select a Target Entity.'); return; }
     const type = document.getElementById('newDueType').value;
     const m = parseInt(document.getElementById('newDueMonth').value);
     const d = parseInt(document.getElementById('newDueDay').value);
@@ -1316,7 +1283,7 @@
       quarter: document.getElementById('newQuarter').value, scope: document.getElementById('newScope').value,
       short: sToken, title: titleText, due_type: type, due_month: type === 'fixed' ? m : null, due_day: type === 'fixed' ? d : null,
       due_text: type === 'fixed' ? `${monthNames[m-1]} ${d}` : 'Rolling Milestone', target_year: targetYr,
-      entity: document.getElementById('newEntity').value.trim() || 'Bookr, Inc.',
+      entity_id: parseInt(eId), entity: eName,
       portal_name: portalName || null, portal_url: portalName ? (document.getElementById('newPortalUrl').value.trim() || '#') : null,
       info: document.getElementById('newInfo').value.trim() || 'Custom parameters.'
     };

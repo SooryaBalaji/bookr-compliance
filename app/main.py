@@ -24,7 +24,7 @@ from app.seed_data import (
     GENERAL_LLC_TASKS
 )
 
-VALID_ROLES = ["admin", "member_edit", "member_read"]
+VALID_ROLES = ["super_admin", "co_admin", "editor", "viewer"]
 
 
 @asynccontextmanager
@@ -48,34 +48,45 @@ if os.path.exists(STATIC_DIR):
 async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-
-# ---------------------------------------------------------------------------
-# RBAC Dependencies
-# ---------------------------------------------------------------------------
+# RBAC Dependencies & Verification
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ["super_admin", "co_admin"]:
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return current_user
 
 
 async def get_current_editor(current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["admin", "member_edit"]:
-        raise HTTPException(status_code=403, detail="Editor privileges required")
+    if current_user.role == "viewer":
+        raise HTTPException(status_code=403, detail="Editor write privileges required")
     return current_user
 
 
-# ---------------------------------------------------------------------------
+async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int):
+    """Verifies that the user has been granted access to this specific organization."""
+    if user.role == "super_admin":
+        return True
+    res = await db.execute(select(models.EntityMember).where(
+        models.EntityMember.user_id == user.id, models.EntityMember.entity_id == entity_id
+    ))
+    if not res.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Cross-organization security violation blocked.")
+    return True
+
 # Auth & User Management
-# ---------------------------------------------------------------------------
 @app.post("/auth/register", response_model=schemas.Token)
 async def register(payload: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
+
     count_result = await db.execute(select(models.User.id))
     is_first = len(count_result.all()) == 0
+
+    if not is_first:
+        raise HTTPException(status_code=403, detail="Public registration disabled. Contact a Bookr Super Admin.")
+
     user = models.User(email=payload.email, full_name=payload.full_name, password_hash=hash_password(payload.password),
-                       role="admin" if is_first else "member_read")
+                       role="super_admin")
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -95,16 +106,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
 async def read_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
-
 @app.get("/users/", response_model=List[schemas.UserResponse])
 async def list_users(db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
     result = await db.execute(select(models.User))
     return result.scalars().all()
 
-
 class RoleUpdate(BaseModel):
     role: str
-
 
 @app.patch("/users/{user_id}/role")
 async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession = Depends(get_db),
@@ -115,10 +123,12 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.role == "admin" and payload.role != "admin":
-        admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "admin"))
+
+    if user.role == "super_admin" and payload.role != "super_admin":
+        admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
-            raise HTTPException(status_code=403, detail="Cannot demote the last remaining Co-Admin.")
+            raise HTTPException(status_code=403, detail="Cannot demote the last remaining Super Admin.")
+
     user.role = payload.role
     await db.commit()
     return {"status": "success", "role": user.role}
@@ -128,7 +138,7 @@ class AdminUserCreate(BaseModel):
     email: str
     password: str = Field(..., min_length=8)
     full_name: Optional[str] = None
-    role: str = "member_read"
+    role: str = "viewer"
 
 
 @app.post("/users/", response_model=schemas.UserResponse)
@@ -154,20 +164,17 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
     target_user = result.scalar_one_or_none()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
-    if target_user.role == "admin" and target_user.id != admin.id:
-        raise HTTPException(status_code=403, detail="Security Violation: Cannot delete other Admin accounts.")
-    if target_user.role == "admin":
-        admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "admin"))
+    if target_user.role == "super_admin" and target_user.id != admin.id:
+        raise HTTPException(status_code=403, detail="Security Violation: Cannot delete other Super Admin accounts.")
+    if target_user.role == "super_admin":
+        admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
-            raise HTTPException(status_code=403, detail="Cannot delete the last remaining Co-Admin.")
+            raise HTTPException(status_code=403, detail="Cannot delete the last remaining Super Admin.")
     await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
 
-
-# ---------------------------------------------------------------------------
 # Entity Control & Architecture Core
-# ---------------------------------------------------------------------------
 @app.post("/entities/", response_model=schemas.EntityResponse)
 async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depends(get_db),
                         admin: models.User = Depends(get_current_admin)):
@@ -182,9 +189,6 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
     await db.commit()
     await db.refresh(entity)
 
-    # ---------------------------------------------------------
-    # Route to the exhaustively mapped framework templates
-    # ---------------------------------------------------------
     if payload.creation_template == "bookr":
         template = CORE_TASKS
     elif payload.creation_template == "pebble":
@@ -215,28 +219,27 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
 
 
 @app.post("/entities/{entity_id}/assign")
-async def assign_entity_admin(entity_id: int, payload: schemas.AssignAdminPayload, db: AsyncSession = Depends(get_db),
-                              current_admin: models.User = Depends(get_current_admin)):
+async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPayload, db: AsyncSession = Depends(get_db),
+                               current_admin: models.User = Depends(get_current_admin)):
     user_res = await db.execute(select(models.User).where(models.User.id == payload.admin_id))
     user = user_res.scalar_one_or_none()
 
-    if not user or user.role != "admin":
-        raise HTTPException(status_code=400, detail="Only Co-Admins can be assigned to manage an entity.")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
 
     entity_res = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = entity_res.scalar_one_or_none()
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found.")
 
-    # Detach user from any old entities (Strict 1-to-1 enforcement)
-    old_assignment = await db.execute(select(models.Entity).where(models.Entity.admin_id == user.id))
-    old_entity = old_assignment.scalar_one_or_none()
-    if old_entity:
-        old_entity.admin_id = None
+    existing = await db.execute(select(models.EntityMember).where(
+        models.EntityMember.user_id == payload.admin_id, models.EntityMember.entity_id == entity_id
+    ))
+    if not existing.scalar_one_or_none():
+        db.add(models.EntityMember(user_id=payload.admin_id, entity_id=entity_id))
+        await db.commit()
 
-    entity.admin_id = user.id
-    await db.commit()
-    return {"status": "success", "message": f"Co-Admin assigned"}
+    return {"status": "success", "message": "User assigned to entity successfully."}
 
 
 @app.get("/entities/", response_model=List[schemas.EntityResponse])
@@ -244,29 +247,30 @@ async def list_entities(db: AsyncSession = Depends(get_db), current_admin: model
     res = await db.execute(select(models.Entity))
     return res.scalars().all()
 
-
-# ---------------------------------------------------------------------------
 # Tasks & Logs (Protected)
-# ---------------------------------------------------------------------------
+
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
 async def list_tasks(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    if current_user.role == "admin":
-        # Render only what the Co-Admin manages
-        entity_res = await db.execute(select(models.Entity).where(models.Entity.admin_id == current_user.id))
-        entity = entity_res.scalar_one_or_none()
-        if entity:
-            result = await db.execute(
-                select(models.Task).where(models.Task.deleted == False, models.Task.entity_id == entity.id))
-        else:
-            result = await db.execute(select(models.Task).where(models.Task.deleted == False))
-    else:
+    if current_user.role == "super_admin":
         result = await db.execute(select(models.Task).where(models.Task.deleted == False))
+    else:
+        mem_res = await db.execute(
+            select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
+        allowed_entities = mem_res.scalars().all()
+        if not allowed_entities:
+            return []
+        result = await db.execute(
+            select(models.Task).where(models.Task.deleted == False, models.Task.entity_id.in_(allowed_entities))
+        )
     return result.scalars().all()
 
 
 @app.post("/tasks/", response_model=schemas.TaskResponse)
 async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(get_db),
                       editor: models.User = Depends(get_current_editor)):
+    if payload.entity_id:
+        await verify_org_access(db, editor, payload.entity_id)
+
     key = f"cust_{int(__import__('time').time() * 1000)}"
     count_result = await db.execute(select(models.Task.id))
     next_num = len(count_result.all()) + 1
@@ -280,10 +284,11 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
 
 @app.delete("/tasks/{task_id}")
 async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
-                      admin: models.User = Depends(get_current_admin)):
+                      editor: models.User = Depends(get_current_editor)):
     result = await db.execute(select(models.Task).where(models.Task.id == task_id))
     task = result.scalar_one_or_none()
     if task:
+        await verify_org_access(db, editor, task.entity_id)
         task.deleted = True
         log_result = await db.execute(select(models.ComplianceLog).where(models.ComplianceLog.task_id == task_id))
         for log in log_result.scalars().all():
@@ -295,7 +300,16 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
 @app.get("/logs/", response_model=List[schemas.LogResponse])
 async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
                     db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    query = select(models.ComplianceLog)
+    query = select(models.ComplianceLog).join(models.Task)
+
+    if current_user.role != "super_admin":
+        mem_res = await db.execute(
+            select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
+        allowed_entities = mem_res.scalars().all()
+        if not allowed_entities:
+            return []
+        query = query.where(models.Task.entity_id.in_(allowed_entities))
+
     if task_id: query = query.where(models.ComplianceLog.task_id == task_id)
     if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
     result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()))
@@ -305,6 +319,13 @@ async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = 
 @app.post("/logs/", response_model=schemas.LogResponse)
 async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_db),
                      editor: models.User = Depends(get_current_editor)):
+    task_res = await db.execute(select(models.Task).where(models.Task.id == payload.task_id))
+    task = task_res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    await verify_org_access(db, editor, task.entity_id)
+
     log = models.ComplianceLog(actor_id=editor.id, **payload.model_dump())
     db.add(log)
     await db.commit()
@@ -313,9 +334,30 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
 
 
 @app.delete("/logs/{log_id}")
-async def delete_log(log_id: int, db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
+async def delete_log(log_id: int, db: AsyncSession = Depends(get_db),
+                     editor: models.User = Depends(get_current_editor)):
     result = await db.execute(select(models.ComplianceLog).where(models.ComplianceLog.id == log_id))
     if log := result.scalar_one_or_none():
+        task_res = await db.execute(select(models.Task).where(models.Task.id == log.task_id))
+        task = task_res.scalar_one_or_none()
+        if task:
+            await verify_org_access(db, editor, task.entity_id)
         await db.delete(log)
         await db.commit()
+    return {"status": "success"}
+
+
+@app.delete("/logs/")
+async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
+                         db: AsyncSession = Depends(get_db), editor: models.User = Depends(get_current_editor)):
+    query = select(models.ComplianceLog)
+    if task_id: query = query.where(models.ComplianceLog.task_id == task_id)
+    if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
+    result = await db.execute(query)
+    for log in result.scalars().all():
+        task_res = await db.execute(select(models.Task).where(models.Task.id == log.task_id))
+        if task := task_res.scalar_one_or_none():
+            await verify_org_access(db, editor, task.entity_id)
+            await db.delete(log)
+    await db.commit()
     return {"status": "success"}

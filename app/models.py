@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime, timezone
@@ -11,11 +11,10 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
-    role = Column(String, default="member_read")  # "admin", "member_edit", "member_read"
+    role = Column(String, default="viewer")  # "super_admin", "co_admin", "editor", "viewer"
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    # 1-to-1 relationship mapping back to the entity they manage
-    managed_entity = relationship("Entity", back_populates="admin_user", uselist=False)
+    memberships = relationship("EntityMember", back_populates="user", cascade="all, delete-orphan")
 
 
 class Entity(Base):
@@ -28,11 +27,22 @@ class Entity(Base):
     headquarters = Column(String, nullable=False)
     naics_code = Column(String, nullable=False)
 
-    # Enforcing strict 1-to-1 admin assignment
-    admin_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=True)
-
-    admin_user = relationship("User", back_populates="managed_entity")
+    members = relationship("EntityMember", back_populates="entity", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="assigned_entity", cascade="all, delete-orphan")
+
+
+class EntityMember(Base):
+    __tablename__ = "entity_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+
+    # Ensures a user isn't assigned to the same organization twice
+    __table_args__ = (UniqueConstraint('user_id', 'entity_id', name='_user_entity_uc'),)
+
+    user = relationship("User", back_populates="memberships")
+    entity = relationship("Entity", back_populates="members")
 
 
 class OrgSettings(Base):
