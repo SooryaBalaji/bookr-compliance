@@ -87,7 +87,8 @@ class Task(Base):
     alt_note = Column(Text, nullable=True)
     info = Column(Text, nullable=True)
 
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # SET NULL prevents cascading deletes if the employee who created this task is removed
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     logs = relationship("ComplianceLog", back_populates="task", cascade="all, delete-orphan")
@@ -96,6 +97,9 @@ class Task(Base):
 
 class ComplianceLog(Base):
     __tablename__ = "compliance_logs"
+
+    # Prevents duplicate submissions for the exact same task in the exact same fiscal year
+    __table_args__ = (UniqueConstraint('task_id', 'fiscal_year', name='_task_fiscal_year_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
@@ -106,9 +110,10 @@ class ComplianceLog(Base):
     cloud_link = Column(String, nullable=True)
     note = Column(Text, nullable=True)
     file_name = Column(String, nullable=True)
-    file_data = Column(Text, nullable=True)
+    file_data = Column(Text, nullable=True) # Now safely stores URL paths instead of heavy Base64 strings
 
-    actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # SET NULL preserves vital legal compliance history even if the employee account is deleted
+    actor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     task = relationship("Task", back_populates="logs")
