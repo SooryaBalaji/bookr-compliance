@@ -148,6 +148,19 @@ async def get_admin_entity_ids(db: AsyncSession, admin: models.User) -> set:
     return set(res.scalars().all())
 
 
+async def _next_task_num(db: AsyncSession, entity_id: int) -> int:
+    """Atomically computes the next display-order `num` for a new custom task within
+    one entity's task list (num is only ever sorted/compared within a single entity's
+    own list on the frontend, never globally). Under concurrent task creation for the
+    same entity, a plain count-then-insert races; a transaction-scoped Postgres advisory
+    lock keyed by entity_id closes that window. SQLite (local dev only) has no
+    equivalent — that path is unlocked and accepts the (much rarer, non-fatal) race."""
+    if engine.dialect.name == "postgresql":
+        await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": entity_id})
+    count_result = await db.execute(select(models.Task.id).where(models.Task.entity_id == entity_id))
+    return len(count_result.all()) + 1
+
+
 async def verify_shared_org_access(db: AsyncSession, admin: models.User, target_user_id: int):
     if admin.role == "super_admin":
         return True
@@ -555,9 +568,8 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
 
     await verify_org_access(db, editor, payload.entity_id)
 
-    key = f"cust_{int(__import__('time').time() * 1000)}"
-    count_result = await db.execute(select(models.Task.id))
-    next_num = len(count_result.all()) + 1
+    key = f"cust_{uuid.uuid4().hex}"
+    next_num = await _next_task_num(db, payload.entity_id)
     task = models.Task(key=key, is_core=False, deleted=False, num=next_num, created_by=editor.id,
                        **payload.model_dump())
     db.add(task)
@@ -680,7 +692,13 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
     for log in result.scalars().all():
         task_res = await db.execute(select(models.Task).where(models.Task.id == log.task_id))
         if task := task_res.scalar_one_or_none():
-            await verify_org_access(db, editor, task.entity_id)
+            try:
+                await verify_org_access(db, editor, task.entity_id)
+            except HTTPException:
+                # Skip logs the caller can't access instead of aborting the whole
+                # bulk clear — an unfiltered call previously died on the first log
+                # belonging to another org.
+                continue
             await db.delete(log)
     await db.commit()
     return {"status": "success"}
