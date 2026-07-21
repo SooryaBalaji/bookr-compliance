@@ -3,26 +3,26 @@
 
 STATE_TASKS_MAP = {
     "Alabama": [
-        {'key': 'al_bpt', 'num': 50, 'quarter': 'Q2', 'scope': 'Alabama', 'short': 'AL BPT Return',
+        {'key': 'al_bpt', 'num': 46, 'quarter': 'Q2', 'scope': 'Alabama', 'short': 'AL BPT Return',
          'title': 'Alabama Business Privilege Tax Return', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'AL MAT Portal', 'portal_url': 'https://myalabamataxes.alabama.gov/',
          'info': 'Annual privilege tax filing required for all entities.'}
     ],
     "Alaska": [
-        {'key': 'ak_biennial', 'num': 50, 'quarter': 'Q1', 'scope': 'Alaska', 'short': 'AK Biennial Report',
+        {'key': 'ak_biennial', 'num': 47, 'quarter': 'Q1', 'scope': 'Alaska', 'short': 'AK Biennial Report',
          'title': 'Alaska Biennial Corporate / LLC Report', 'due_type': 'fixed', 'due_month': 1, 'due_day': 2,
          'due_text': 'January 2', 'portal_name': 'AK Corp Division',
          'portal_url': 'https://www.commerce.alaska.gov/cbp/main/',
          'info': 'Filed biennially based on odd/even year of formation.'}
     ],
     "Arizona": [
-        {'key': 'az_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Arizona', 'short': 'AZ Annual Report',
+        {'key': 'az_ar', 'num': 48, 'quarter': 'ROLL', 'scope': 'Arizona', 'short': 'AZ Annual Report',
          'title': 'Arizona Corporation Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Date', 'portal_name': 'AZ eCorp', 'portal_url': 'https://ecorp.azcc.gov/',
          'info': 'Required for Corporations. (AZ LLCs are exempt from state annual reports).'}
     ],
     "Arkansas": [
-        {'key': 'ar_franchise', 'num': 50, 'quarter': 'Q2', 'scope': 'Arkansas', 'short': 'AR Franchise Tax',
+        {'key': 'ar_franchise', 'num': 49, 'quarter': 'Q2', 'scope': 'Arkansas', 'short': 'AR Franchise Tax',
          'title': 'Arkansas Annual Franchise Tax Report', 'due_type': 'fixed', 'due_month': 5, 'due_day': 1,
          'due_text': 'May 1', 'portal_name': 'AR SOS Portal', 'portal_url': 'https://www.sos.arkansas.gov/',
          'info': 'Annual franchise tax due for Corporations and LLCs.'}
@@ -36,95 +36,95 @@ STATE_TASKS_MAP = {
          'info': 'Annual (Corp) or Biennial (LLC) filing.'}
     ],
     "Colorado": [
-        {'key': 'co_periodic', 'num': 50, 'quarter': 'ROLL', 'scope': 'Colorado', 'short': 'CO Periodic Report',
+        {'key': 'co_periodic', 'num': 51, 'quarter': 'ROLL', 'scope': 'Colorado', 'short': 'CO Periodic Report',
          'title': 'Colorado Periodic Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Month', 'portal_name': 'CO SOS Business Portal',
          'portal_url': 'https://www.sos.state.co.us/',
          'info': 'Annual filing due during anniversary month.'}
     ],
     "Connecticut": [
-        {'key': 'ct_ar', 'num': 50, 'quarter': 'Q1', 'scope': 'Connecticut', 'short': 'CT Annual Report',
+        {'key': 'ct_ar', 'num': 52, 'quarter': 'Q1', 'scope': 'Connecticut', 'short': 'CT Annual Report',
          'title': 'Connecticut Annual Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
          'due_text': 'March 31', 'portal_name': 'CT CONCORD', 'portal_url': 'https://service.ct.gov/',
          'info': 'Annual report required for LLCs and Corporations.'}
     ],
     "Delaware": [
-        {'key': 'de_fran_tax', 'num': 50, 'quarter': 'Q1', 'scope': 'Delaware', 'short': 'DE Franchise Tax',
+        {'key': 'de_fran_tax', 'num': 53, 'quarter': 'Q1', 'scope': 'Delaware', 'short': 'DE Franchise Tax',
          'title': 'Delaware Franchise Tax & Annual Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 1,
          'due_text': 'March 1 (Corp) / June 1 (LLC)', 'portal_name': 'DE eCorp',
          'portal_url': 'https://icis.corp.delaware.gov/ecorp/',
          'info': 'Mandatory for DE entities.'}
     ],
     "Florida": [
-        {'key': 'fl_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Florida', 'short': 'FL Annual Report',
+        {'key': 'fl_ar', 'num': 54, 'quarter': 'Q2', 'scope': 'Florida', 'short': 'FL Annual Report',
          'title': 'Florida Annual Report', 'due_type': 'fixed', 'due_month': 5, 'due_day': 1,
          'due_text': 'May 1', 'portal_name': 'Sunbiz', 'portal_url': 'https://corplaw.dos.state.fl.us/',
          'info': 'Substantial $400 penalty if filed after May 1.'}
     ],
     "Georgia": [
-        {'key': 'ga_registration', 'num': 50, 'quarter': 'Q2', 'scope': 'Georgia', 'short': 'GA Annual Registration',
+        {'key': 'ga_registration', 'num': 55, 'quarter': 'Q2', 'scope': 'Georgia', 'short': 'GA Annual Registration',
          'title': 'Georgia Annual Registration', 'due_type': 'fixed', 'due_month': 4, 'due_day': 1,
          'due_text': 'April 1', 'portal_name': 'GA eCorp', 'portal_url': 'https://ecorp.sos.ga.gov/',
          'info': 'Annual registration filing for active business entities.'}
     ],
     "Hawaii": [
-        {'key': 'hi_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Hawaii', 'short': 'HI Annual Report',
+        {'key': 'hi_ar', 'num': 56, 'quarter': 'ROLL', 'scope': 'Hawaii', 'short': 'HI Annual Report',
          'title': 'Hawaii Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Quarter', 'portal_name': 'HI Business Express',
          'portal_url': 'https://hbe.ehawaii.gov/',
          'info': 'Due during the quarter of original registration.'}
     ],
     "Idaho": [
-        {'key': 'id_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Idaho', 'short': 'ID Annual Report',
+        {'key': 'id_ar', 'num': 57, 'quarter': 'ROLL', 'scope': 'Idaho', 'short': 'ID Annual Report',
          'title': 'Idaho Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Month', 'portal_name': 'ID bizfile', 'portal_url': 'https://sosbiz.idaho.gov/',
          'info': 'No state filing fee, mandatory annual report.'}
     ],
     "Illinois": [
-        {'key': 'il_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Illinois', 'short': 'IL Annual Report',
+        {'key': 'il_ar', 'num': 58, 'quarter': 'ROLL', 'scope': 'Illinois', 'short': 'IL Annual Report',
          'title': 'Illinois Annual Report & Franchise Tax', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Prior to Anniversary Month', 'portal_name': 'IL CyberDrive',
          'portal_url': 'https://www.ilsos.gov/',
          'info': 'Must be filed prior to the first day of anniversary month.'}
     ],
     "Indiana": [
-        {'key': 'in_ber', 'num': 50, 'quarter': 'ROLL', 'scope': 'Indiana', 'short': 'IN Business Entity Report',
+        {'key': 'in_ber', 'num': 59, 'quarter': 'ROLL', 'scope': 'Indiana', 'short': 'IN Business Entity Report',
          'title': 'Indiana Business Entity Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Biennial Anniversary Month', 'portal_name': 'INBiz', 'portal_url': 'https://inbiz.in.gov/',
          'info': 'Filed biennially in the anniversary month.'}
     ],
     "Iowa": [
-        {'key': 'ia_biennial', 'num': 50, 'quarter': 'Q2', 'scope': 'Iowa', 'short': 'IA Biennial Report',
+        {'key': 'ia_biennial', 'num': 60, 'quarter': 'Q2', 'scope': 'Iowa', 'short': 'IA Biennial Report',
          'title': 'Iowa Biennial Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 1,
          'due_text': 'April 1', 'portal_name': 'IA Fast Track Filing', 'portal_url': 'https://filings.sos.iowa.gov/',
          'info': 'Even years for Corporations; Odd years for LLCs.'}
     ],
     "Kansas": [
-        {'key': 'ks_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Kansas', 'short': 'KS Annual Report',
+        {'key': 'ks_ar', 'num': 61, 'quarter': 'Q2', 'scope': 'Kansas', 'short': 'KS Annual Report',
          'title': 'Kansas Annual / Biennial Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'KS KanFile', 'portal_url': 'https://www.kansas.gov/bess/',
          'info': 'Required for active business entities in Kansas.'}
     ],
     "Kentucky": [
-        {'key': 'ky_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Kentucky', 'short': 'KY Annual Report',
+        {'key': 'ky_ar', 'num': 62, 'quarter': 'Q2', 'scope': 'Kentucky', 'short': 'KY Annual Report',
          'title': 'Kentucky Annual Report', 'due_type': 'fixed', 'due_month': 6, 'due_day': 30,
          'due_text': 'June 30', 'portal_name': 'KY Online Services', 'portal_url': 'https://www.sos.ky.gov/',
          'info': 'Required annually by June 30.'}
     ],
     "Louisiana": [
-        {'key': 'la_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Louisiana', 'short': 'LA Annual Report',
+        {'key': 'la_ar', 'num': 63, 'quarter': 'ROLL', 'scope': 'Louisiana', 'short': 'LA Annual Report',
          'title': 'Louisiana Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Date', 'portal_name': 'geauxBIZ', 'portal_url': 'https://geauxbiz.sos.la.gov/',
          'info': 'Due annually on or before charter date.'}
     ],
     "Maine": [
-        {'key': 'me_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Maine', 'short': 'ME Annual Report',
+        {'key': 'me_ar', 'num': 64, 'quarter': 'Q2', 'scope': 'Maine', 'short': 'ME Annual Report',
          'title': 'Maine Annual Report', 'due_type': 'fixed', 'due_month': 6, 'due_day': 1,
          'due_text': 'June 1', 'portal_name': 'ME Corporate Filing', 'portal_url': 'https://www.maine.gov/sos/',
          'info': 'Required for all Maine active registered entities.'}
     ],
     "Maryland": [
-        {'key': 'md_f1', 'num': 50, 'quarter': 'Q2', 'scope': 'Maryland', 'short': 'MD Form 1 AR',
+        {'key': 'md_f1', 'num': 65, 'quarter': 'Q2', 'scope': 'Maryland', 'short': 'MD Form 1 AR',
          'title': 'Maryland Annual Report & Personal Property Return', 'due_type': 'fixed', 'due_month': 4,
          'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'Maryland Business Express',
@@ -132,54 +132,54 @@ STATE_TASKS_MAP = {
          'info': 'Mandatory personal property tax and annual report.'}
     ],
     "Massachusetts": [
-        {'key': 'ma_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Massachusetts', 'short': 'MA Annual Report',
+        {'key': 'ma_ar', 'num': 66, 'quarter': 'ROLL', 'scope': 'Massachusetts', 'short': 'MA Annual Report',
          'title': 'Massachusetts Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Date (LLC) / 2.5 mo FY Close (Corp)', 'portal_name': 'MA SOC Portal',
          'portal_url': 'https://www.sec.state.ma.us/cor/',
          'info': 'Annual corporate report requirement.'}
     ],
     "Michigan": [
-        {'key': 'mi_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Michigan', 'short': 'MI Annual Statement',
+        {'key': 'mi_ar', 'num': 67, 'quarter': 'Q2', 'scope': 'Michigan', 'short': 'MI Annual Statement',
          'title': 'Michigan Annual Report / Statement', 'due_type': 'fixed', 'due_month': 5, 'due_day': 15,
          'due_text': 'May 15 (Corp) / Feb 15 (LLC)', 'portal_name': 'MI LARA Portal',
          'portal_url': 'https://cora.lara.michigan.gov/',
          'info': 'Annual filing with Department of Licensing and Regulatory Affairs.'}
     ],
     "Minnesota": [
-        {'key': 'mn_renewal', 'num': 50, 'quarter': 'Q4', 'scope': 'Minnesota', 'short': 'MN Annual Renewal',
+        {'key': 'mn_renewal', 'num': 68, 'quarter': 'Q4', 'scope': 'Minnesota', 'short': 'MN Annual Renewal',
          'title': 'Minnesota Annual Renewal', 'due_type': 'fixed', 'due_month': 12, 'due_day': 31,
          'due_text': 'December 31', 'portal_name': 'MN MBLS Portal',
          'portal_url': 'https://mblsportal.sos.state.mn.us/',
          'info': 'Required annually by December 31.'}
     ],
     "Mississippi": [
-        {'key': 'ms_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Mississippi', 'short': 'MS Annual Report',
+        {'key': 'ms_ar', 'num': 69, 'quarter': 'Q2', 'scope': 'Mississippi', 'short': 'MS Annual Report',
          'title': 'Mississippi Annual Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'MS SOS Portal', 'portal_url': 'https://corp.sos.ms.gov/',
          'info': 'Mandatory annual report filing.'}
     ],
     "Missouri": [
-        {'key': 'mo_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Missouri', 'short': 'MO Annual Report',
+        {'key': 'mo_ar', 'num': 70, 'quarter': 'ROLL', 'scope': 'Missouri', 'short': 'MO Annual Report',
          'title': 'Missouri Corporation Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'End of 3rd Month Post-Anniversary', 'portal_name': 'MO Online Business Services',
          'portal_url': 'https://bsd.sos.mo.gov/',
          'info': 'Corporations only (MO LLCs are exempt).'}
     ],
     "Montana": [
-        {'key': 'mt_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Montana', 'short': 'MT Annual Report',
+        {'key': 'mt_ar', 'num': 71, 'quarter': 'Q2', 'scope': 'Montana', 'short': 'MT Annual Report',
          'title': 'Montana Annual Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'MT SIMS Portal', 'portal_url': 'https://biz.sosmt.gov/',
          'info': 'Required for active business entities.'}
     ],
     "Nebraska": [
-        {'key': 'ne_biennial', 'num': 50, 'quarter': 'Q1', 'scope': 'Nebraska', 'short': 'NE Biennial Report',
+        {'key': 'ne_biennial', 'num': 72, 'quarter': 'Q1', 'scope': 'Nebraska', 'short': 'NE Biennial Report',
          'title': 'Nebraska Biennial Report & Occupation Tax', 'due_type': 'fixed', 'due_month': 3, 'due_day': 1,
          'due_text': 'March 1 (Even Yrs Corp) / April 1 (Odd Yrs LLC)', 'portal_name': 'NE Corporate Portal',
          'portal_url': 'https://www.nebraska.gov/sos/corp/',
          'info': 'Occupation tax report.'}
     ],
     "Nevada": [
-        {'key': 'nv_annual_list', 'num': 50, 'quarter': 'ROLL', 'scope': 'Nevada', 'short': 'NV Annual List',
+        {'key': 'nv_annual_list', 'num': 73, 'quarter': 'ROLL', 'scope': 'Nevada', 'short': 'NV Annual List',
          'title': 'Nevada Annual List of Officers/Managers & State License', 'due_type': 'rolling', 'due_month': None,
          'due_day': None,
          'due_text': 'Last Day of Anniversary Month', 'portal_name': 'SilverFlume',
@@ -187,53 +187,53 @@ STATE_TASKS_MAP = {
          'info': 'Annual List filing fee + state business license fee.'}
     ],
     "New Hampshire": [
-        {'key': 'nh_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'New Hampshire', 'short': 'NH Annual Report',
+        {'key': 'nh_ar', 'num': 74, 'quarter': 'Q2', 'scope': 'New Hampshire', 'short': 'NH Annual Report',
          'title': 'New Hampshire Annual Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 1,
          'due_text': 'April 1', 'portal_name': 'NH QuickStart', 'portal_url': 'https://quickstart.sos.nh.gov/',
          'info': 'Mandatory corporate filing.'}
     ],
     "New Jersey": [
-        {'key': 'nj_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'New Jersey', 'short': 'NJ Annual Report',
+        {'key': 'nj_ar', 'num': 75, 'quarter': 'ROLL', 'scope': 'New Jersey', 'short': 'NJ Annual Report',
          'title': 'New Jersey Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'End of Month Prior to Anniversary', 'portal_name': 'NJ Premier Business Services',
          'portal_url': 'https://www.njportal.com/dor/annualreports',
          'info': 'Required for all active NJ domestic/foreign qualified entities.'}
     ],
     "New Mexico": [
-        {'key': 'nm_biennial', 'num': 50, 'quarter': 'Q2', 'scope': 'New Mexico', 'short': 'NM Corporate Biennial',
+        {'key': 'nm_biennial', 'num': 76, 'quarter': 'Q2', 'scope': 'New Mexico', 'short': 'NM Corporate Biennial',
          'title': 'New Mexico Corporate Biennial Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': '15th Day of 4th Month Post-FY', 'portal_name': 'NM SOS Portal',
          'portal_url': 'https://portal.sos.state.nm.us/',
          'info': 'Corporations only (NM LLCs are exempt from filing).'}
     ],
     "New York": [
-        {'key': 'ny_biennial', 'num': 50, 'quarter': 'ROLL', 'scope': 'New York', 'short': 'NY Biennial Statement',
+        {'key': 'ny_biennial', 'num': 77, 'quarter': 'ROLL', 'scope': 'New York', 'short': 'NY Biennial Statement',
          'title': 'New York Biennial Statement', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Month', 'portal_name': 'NY Dept of State Portal', 'portal_url': 'https://dos.ny.gov/',
          'info': 'Filed every 2 years during anniversary month.'}
     ],
     "North Carolina": [
-        {'key': 'nc_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'North Carolina', 'short': 'NC Annual Report',
+        {'key': 'nc_ar', 'num': 78, 'quarter': 'Q2', 'scope': 'North Carolina', 'short': 'NC Annual Report',
          'title': 'North Carolina Annual Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'NC SOS Portal', 'portal_url': 'https://www.sosnc.gov/',
          'info': 'Annual report required for LLCs and Corporations.'}
     ],
     "North Dakota": [
-        {'key': 'nd_ar', 'num': 50, 'quarter': 'Q3', 'scope': 'North Dakota', 'short': 'ND Annual Report',
+        {'key': 'nd_ar', 'num': 79, 'quarter': 'Q3', 'scope': 'North Dakota', 'short': 'ND Annual Report',
          'title': 'North Dakota Annual Report', 'due_type': 'fixed', 'due_month': 8, 'due_day': 1,
          'due_text': 'August 1 (Corp) / Nov 15 (LLC)', 'portal_name': 'ND FirstStop',
          'portal_url': 'https://firststop.sos.nd.gov/',
          'info': 'State statutory report.'}
     ],
     "Ohio": [
-        {'key': 'oh_notice', 'num': 50, 'quarter': 'ROLL', 'scope': 'Ohio',
+        {'key': 'oh_notice', 'num': 80, 'quarter': 'ROLL', 'scope': 'Ohio',
          'short': 'OH Statement of Continued Existence',
          'title': 'Ohio Statement of Continued Existence', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Every 5 Years', 'portal_name': 'OH Business Central', 'portal_url': 'https://bsd.ohiosos.gov/',
          'info': 'Ohio does not require general annual reports, only 5-year renewals for specific entities.'}
     ],
     "Oklahoma": [
-        {'key': 'ok_certificate', 'num': 50, 'quarter': 'ROLL', 'scope': 'Oklahoma', 'short': 'OK Annual Certificate',
+        {'key': 'ok_certificate', 'num': 81, 'quarter': 'ROLL', 'scope': 'Oklahoma', 'short': 'OK Annual Certificate',
          'title': 'Oklahoma Annual Certificate / Franchise Tax', 'due_type': 'rolling', 'due_month': None,
          'due_day': None,
          'due_text': 'Anniversary Date (LLC) / July 1 (Corp)', 'portal_name': 'OK SOS Filing',
@@ -241,67 +241,67 @@ STATE_TASKS_MAP = {
          'info': 'Annual business certificate maintenance.'}
     ],
     "Oregon": [
-        {'key': 'or_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Oregon', 'short': 'OR Annual Report',
+        {'key': 'or_ar', 'num': 82, 'quarter': 'ROLL', 'scope': 'Oregon', 'short': 'OR Annual Report',
          'title': 'Oregon Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Date', 'portal_name': 'OR Business Registry',
          'portal_url': 'https://sos.oregon.gov/business',
          'info': 'Annual report filing requirement.'}
     ],
     "Pennsylvania": [
-        {'key': 'pa_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Pennsylvania', 'short': 'PA Annual Report',
+        {'key': 'pa_ar', 'num': 83, 'quarter': 'Q2', 'scope': 'Pennsylvania', 'short': 'PA Annual Report',
          'title': 'Pennsylvania Annual Report', 'due_type': 'fixed', 'due_month': 6, 'due_day': 30,
          'due_text': 'June 30 (Corp) / Sept 30 (LLC)', 'portal_name': 'PA Business One-Stop Hub',
          'portal_url': 'https://hub.business.pa.gov/',
          'info': 'New annual report requirement effective in PA.'}
     ],
     "Rhode Island": [
-        {'key': 'ri_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Rhode Island', 'short': 'RI Annual Report',
+        {'key': 'ri_ar', 'num': 84, 'quarter': 'Q2', 'scope': 'Rhode Island', 'short': 'RI Annual Report',
          'title': 'Rhode Island Annual Report', 'due_type': 'fixed', 'due_month': 5, 'due_day': 1,
          'due_text': 'May 1', 'portal_name': 'RI Corporate Portal', 'portal_url': 'https://bizportal.sos.ri.gov/',
          'info': 'Mandatory corporate filing.'}
     ],
     "South Carolina": [
-        {'key': 'sc_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'South Carolina', 'short': 'SC Annual Report',
+        {'key': 'sc_ar', 'num': 85, 'quarter': 'Q2', 'scope': 'South Carolina', 'short': 'SC Annual Report',
          'title': 'South Carolina Corporate Annual Report (CL-1)', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
          'due_text': 'April 15', 'portal_name': 'SC DOR Portal', 'portal_url': 'https://mydorway.sctax.org/',
          'info': 'Filed alongside state tax returns for Corporations (SC LLCs are exempt).'}
     ],
     "South Dakota": [
-        {'key': 'sd_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'South Dakota', 'short': 'SD Annual Report',
+        {'key': 'sd_ar', 'num': 86, 'quarter': 'ROLL', 'scope': 'South Dakota', 'short': 'SD Annual Report',
          'title': 'South Dakota Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'First Day of Anniversary Month', 'portal_name': 'SD Corporate Portal',
          'portal_url': 'https://sdsos.gov/',
          'info': 'Annual filing requirement.'}
     ],
     "Tennessee": [
-        {'key': 'tn_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'Tennessee', 'short': 'TN Annual Report',
+        {'key': 'tn_ar', 'num': 87, 'quarter': 'Q2', 'scope': 'Tennessee', 'short': 'TN Annual Report',
          'title': 'Tennessee Annual Report', 'due_type': 'fixed', 'due_month': 4, 'due_day': 1,
          'due_text': '1st Day of 4th Month Post-FY', 'portal_name': 'TN Business Services',
          'portal_url': 'https://tnbear.tn.gov/',
          'info': 'State annual report.'}
     ],
     "Texas": [
-        {'key': 'tx_franchise', 'num': 50, 'quarter': 'Q2', 'scope': 'Texas', 'short': 'TX Franchise Tax & PIR',
+        {'key': 'tx_franchise', 'num': 88, 'quarter': 'Q2', 'scope': 'Texas', 'short': 'TX Franchise Tax & PIR',
          'title': 'Texas Franchise Tax & Public Information Report', 'due_type': 'fixed', 'due_month': 5, 'due_day': 15,
          'due_text': 'May 15', 'portal_name': 'TX Webfile',
          'portal_url': 'https://comptroller.texas.gov/taxes/franchise/',
          'info': 'Mandatory PIR filing required even if no franchise tax is owed.'}
     ],
     "Utah": [
-        {'key': 'ut_renewal', 'num': 50, 'quarter': 'ROLL', 'scope': 'Utah', 'short': 'UT Annual Renewal',
+        {'key': 'ut_renewal', 'num': 89, 'quarter': 'ROLL', 'scope': 'Utah', 'short': 'UT Annual Renewal',
          'title': 'Utah Annual Business Renewal / Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Anniversary Month', 'portal_name': 'UT OneStop Business Registration',
          'portal_url': 'https://corporations.utah.gov/',
          'info': 'Annual renewal requirement.'}
     ],
     "Vermont": [
-        {'key': 'vt_ar', 'num': 50, 'quarter': 'Q1', 'scope': 'Vermont', 'short': 'VT Annual Report',
+        {'key': 'vt_ar', 'num': 90, 'quarter': 'Q1', 'scope': 'Vermont', 'short': 'VT Annual Report',
          'title': 'Vermont Annual Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
          'due_text': 'March 31', 'portal_name': 'VT Online Services', 'portal_url': 'https://bizfilings.vermont.gov/',
          'info': 'Filing due within 2.5 months post fiscal year close.'}
     ],
     "Virginia": [
-        {'key': 'va_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Virginia', 'short': 'VA Annual Registration',
+        {'key': 'va_ar', 'num': 91, 'quarter': 'ROLL', 'scope': 'Virginia', 'short': 'VA Annual Registration',
          'title': 'Virginia Annual Report & Registration Fee', 'due_type': 'rolling', 'due_month': None,
          'due_day': None,
          'due_text': 'Last Day of Anniversary Month', 'portal_name': 'VA CIS Portal',
@@ -309,34 +309,34 @@ STATE_TASKS_MAP = {
          'info': 'State registration renewal.'}
     ],
     "Washington": [
-        {'key': 'wa_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Washington', 'short': 'WA Annual Report',
+        {'key': 'wa_ar', 'num': 92, 'quarter': 'ROLL', 'scope': 'Washington', 'short': 'WA Annual Report',
          'title': 'Washington Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'Last Day of Anniversary Month', 'portal_name': 'WA CCFS Portal',
          'portal_url': 'https://ccfs.sos.wa.gov/',
          'info': 'Mandatory corporate renewal.'}
     ],
     "West Virginia": [
-        {'key': 'wv_ar', 'num': 50, 'quarter': 'Q2', 'scope': 'West Virginia', 'short': 'WV Annual Report',
+        {'key': 'wv_ar', 'num': 93, 'quarter': 'Q2', 'scope': 'West Virginia', 'short': 'WV Annual Report',
          'title': 'West Virginia Annual Report', 'due_type': 'fixed', 'due_month': 6, 'due_day': 30,
          'due_text': 'June 30', 'portal_name': 'WV One Stop Portal', 'portal_url': 'https://extranet.wvsos.gov/',
          'info': 'State annual report.'}
     ],
     "Wisconsin": [
-        {'key': 'wi_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Wisconsin', 'short': 'WI Annual Report',
+        {'key': 'wi_ar', 'num': 94, 'quarter': 'ROLL', 'scope': 'Wisconsin', 'short': 'WI Annual Report',
          'title': 'Wisconsin Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'End of Anniversary Quarter', 'portal_name': 'WI DFI Portal',
          'portal_url': 'https://www.wdfi.org/',
          'info': 'Mandatory corporate filing.'}
     ],
     "Wyoming": [
-        {'key': 'wy_ar', 'num': 50, 'quarter': 'ROLL', 'scope': 'Wyoming', 'short': 'WY Annual Report',
+        {'key': 'wy_ar', 'num': 95, 'quarter': 'ROLL', 'scope': 'Wyoming', 'short': 'WY Annual Report',
          'title': 'Wyoming Annual Report & Tax', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
          'due_text': 'First Day of Anniversary Month', 'portal_name': 'WY Business Filing System',
          'portal_url': 'https://wyobiz.wyo.gov/',
          'info': 'Minimum tax based on assets in Wyoming.'}
     ],
     "District of Columbia": [
-        {'key': 'dc_biennial', 'num': 50, 'quarter': 'Q2', 'scope': 'District of Columbia',
+        {'key': 'dc_biennial', 'num': 96, 'quarter': 'Q2', 'scope': 'District of Columbia',
          'short': 'DC Biennial Report',
          'title': 'District of Columbia Biennial Report (BRA-25)', 'due_type': 'fixed', 'due_month': 4, 'due_day': 1,
          'due_text': 'April 1', 'portal_name': 'DC CorpOnline', 'portal_url': 'https://corponline.dlcp.dc.gov/',
@@ -443,11 +443,10 @@ CORE_TASKS = [
      'due_text': 'July 31', 'portal_name': 'EFAST2', 'portal_url': 'https://www.efast.dol.gov/',
      'info': 'Required for 401(k) plans and health/welfare plans with 100+ participants.'},
 
-    # August
     {'key': 'bk_si550', 'num': 23, 'quarter': 'ROLL', 'scope': 'California', 'short': 'Form SI-550',
-     'title': 'California Statement of Information', 'due_type': 'fixed', 'due_month': 8, 'due_day': 31,
-     'due_text': 'August 31', 'portal_name': 'bizfile Online', 'portal_url': 'https://bizfileonline.sos.ca.gov/',
-     'info': 'Annual corporate report.'},
+     'title': 'California Statement of Information', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Last Day of Anniversary Month', 'portal_name': 'bizfile Online', 'portal_url': 'https://bizfileonline.sos.ca.gov/',
+     'info': 'File in the anniversary month of incorporation.'},
 
     # September
     {'key': 'bk_1120w_3', 'num': 24, 'quarter': 'Q3', 'scope': 'Federal', 'short': '1120-W Q3',
@@ -708,10 +707,14 @@ CA_FOR_PROFIT_TASKS = [
      'title': 'Local Business License', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'City Portal', 'portal_url': 'https://www.walnut-creek.org/',
      'info': 'Local operational tax.'},
-    {'key': 'ca_c_minutes', 'num': 33, 'quarter': 'ROLL', 'scope': 'Internal', 'short': 'Corp Minutes',
+    {'key': 'ca_c_agent', 'num': 33, 'quarter': 'ROLL', 'scope': 'California', 'short': 'Reg. Agent',
+     'title': 'Registered Agent Annual Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Agent Portal', 'portal_url': 'https://www.vcorpservices.com/',
+     'info': 'Maintains legal good standing in the state of incorporation.'},
+    {'key': 'ca_c_minutes', 'num': 34, 'quarter': 'ROLL', 'scope': 'Internal', 'short': 'Corp Minutes',
      'title': 'Annual Board/Shareholder Minutes', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Internal', 'portal_url': '#', 'info': 'Corporate formalities.'},
-    {'key': 'ca_c_ins', 'num': 34, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Corp Insurances',
+    {'key': 'ca_c_ins', 'num': 35, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Corp Insurances',
      'title': 'General/D&O/WC Insurance Renewals', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#', 'info': 'Liability matrix.'}
 ]
@@ -742,90 +745,114 @@ DELAWARE_CCORP_TASKS = [
      'title': 'DE Unclaimed Property Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 1, 'due_text': 'March 1',
      'portal_name': 'DE Dept of Finance', 'portal_url': 'https://unclaimedproperty.delaware.gov/',
      'info': 'Filing required even if there is no unclaimed property (Negative Report).'},
+    {'key': 'de_c_osha', 'num': 7, 'quarter': 'Q1', 'scope': 'Federal', 'short': 'OSHA 300A',
+     'title': 'OSHA Form 300A Summary Submission', 'due_type': 'fixed', 'due_month': 3, 'due_day': 2,
+     'due_text': 'March 2', 'portal_name': 'OSHA ITA', 'portal_url': 'https://www.osha.gov/injuryreporting/',
+     'info': 'Electronic submission of work-related injuries/illnesses summary.'},
+    {'key': 'de_c_aca', 'num': 8, 'quarter': 'Q1', 'scope': 'Federal', 'short': 'ACA 1094/1095-C',
+     'title': 'Affordable Care Act Employer Reporting', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
+     'due_text': 'March 31', 'portal_name': 'IRS AIR', 'portal_url': 'https://www.irs.gov/e-file-providers/air',
+     'info': 'Electronic filing deadline. Required for Applicable Large Employers (50+ FTEs).'},
 
     # April
-    {'key': 'de_c_1120', 'num': 7, 'quarter': 'Q2', 'scope': 'Federal', 'short': 'Form 1120',
+    {'key': 'de_c_1120', 'num': 9, 'quarter': 'Q2', 'scope': 'Federal', 'short': 'Form 1120',
      'title': 'U.S. Corporation Income Tax Return', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
      'due_text': 'April 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/',
      'info': 'Federal C-Corporation tax return.'},
-    {'key': 'de_c_1120w_1', 'num': 8, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q1',
+    {'key': 'de_c_1120w_1', 'num': 10, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q1',
      'title': 'Fed Est. Tax - Installment 1', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
      'due_text': 'April 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/',
      'info': 'Estimated tax.'},
-    {'key': 'de_c_1100', 'num': 9, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'Form 1100',
+    {'key': 'de_c_1100', 'num': 11, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'Form 1100',
      'title': 'Delaware Corporate Income Tax Return', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
      'due_text': 'April 15', 'portal_name': 'DE Taxpayer Portal', 'portal_url': 'https://tax.delaware.gov/',
      'info': '8.7% flat tax applied to corporate net income apportioned to Delaware.'},
-    {'key': 'de_c_est_1', 'num': 10, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'DE Est. Tax Q1',
+    {'key': 'de_c_est_1', 'num': 12, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'DE Est. Tax Q1',
      'title': 'DE Est. Corporate Income Tax - Q1', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
      'due_text': 'April 15', 'portal_name': 'DE Taxpayer Portal', 'portal_url': 'https://tax.delaware.gov/',
      'info': 'State estimated tax.'},
-    {'key': 'de_c_941_1', 'num': 11, 'quarter': 'Q2', 'scope': 'Federal', 'short': '941 Q1',
+    {'key': 'de_c_941_1', 'num': 13, 'quarter': 'Q2', 'scope': 'Federal', 'short': '941 Q1',
      'title': 'Federal Payroll Tax - Q1', 'due_type': 'fixed', 'due_month': 4, 'due_day': 30, 'due_text': 'April 30',
      'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Payroll reporting.'},
 
     # June
-    {'key': 'de_c_1120w_2', 'num': 12, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q2',
+    {'key': 'de_c_1120w_2', 'num': 14, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q2',
      'title': 'Fed Est. Tax - Installment 2', 'due_type': 'fixed', 'due_month': 6, 'due_day': 15, 'due_text': 'June 15',
      'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Estimated tax.'},
-    {'key': 'de_c_est_2', 'num': 13, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'DE Est. Tax Q2',
+    {'key': 'de_c_est_2', 'num': 15, 'quarter': 'Q2', 'scope': 'Delaware', 'short': 'DE Est. Tax Q2',
      'title': 'DE Est. Corporate Income Tax - Q2', 'due_type': 'fixed', 'due_month': 6, 'due_day': 15,
      'due_text': 'June 15', 'portal_name': 'DE Taxpayer Portal', 'portal_url': 'https://tax.delaware.gov/',
      'info': 'State estimated tax.'},
 
     # July
-    {'key': 'de_c_941_2', 'num': 14, 'quarter': 'Q3', 'scope': 'Federal', 'short': '941 Q2',
+    {'key': 'de_c_941_2', 'num': 16, 'quarter': 'Q3', 'scope': 'Federal', 'short': '941 Q2',
      'title': 'Federal Payroll Tax - Q2', 'due_type': 'fixed', 'due_month': 7, 'due_day': 31, 'due_text': 'July 31',
      'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Payroll reporting.'},
+    {'key': 'de_c_5500', 'num': 17, 'quarter': 'Q3', 'scope': 'Federal', 'short': 'Form 5500',
+     'title': 'Annual Return/Report of Employee Benefit Plan', 'due_type': 'fixed', 'due_month': 7, 'due_day': 31,
+     'due_text': 'July 31', 'portal_name': 'EFAST2', 'portal_url': 'https://www.efast.dol.gov/',
+     'info': 'Required for 401(k) plans and health/welfare plans with 100+ participants.'},
 
     # September
-    {'key': 'de_c_1120w_3', 'num': 15, 'quarter': 'Q3', 'scope': 'Federal', 'short': '1120-W Q3',
+    {'key': 'de_c_1120w_3', 'num': 18, 'quarter': 'Q3', 'scope': 'Federal', 'short': '1120-W Q3',
      'title': 'Fed Est. Tax - Installment 3', 'due_type': 'fixed', 'due_month': 9, 'due_day': 15,
      'due_text': 'September 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/',
      'info': 'Estimated tax.'},
-    {'key': 'de_c_est_3', 'num': 16, 'quarter': 'Q3', 'scope': 'Delaware', 'short': 'DE Est. Tax Q3',
+    {'key': 'de_c_est_3', 'num': 19, 'quarter': 'Q3', 'scope': 'Delaware', 'short': 'DE Est. Tax Q3',
      'title': 'DE Est. Corporate Income Tax - Q3', 'due_type': 'fixed', 'due_month': 9, 'due_day': 15,
      'due_text': 'September 15', 'portal_name': 'DE Taxpayer Portal', 'portal_url': 'https://tax.delaware.gov/',
      'info': 'State estimated tax.'},
 
     # October
-    {'key': 'de_c_941_3', 'num': 17, 'quarter': 'Q4', 'scope': 'Federal', 'short': '941 Q3',
+    {'key': 'de_c_941_3', 'num': 20, 'quarter': 'Q4', 'scope': 'Federal', 'short': '941 Q3',
      'title': 'Federal Payroll Tax - Q3', 'due_type': 'fixed', 'due_month': 10, 'due_day': 31, 'due_text': 'October 31',
      'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Payroll reporting.'},
 
     # December
-    {'key': 'de_c_1120w_4', 'num': 18, 'quarter': 'Q4', 'scope': 'Federal', 'short': '1120-W Q4',
+    {'key': 'de_c_1120w_4', 'num': 21, 'quarter': 'Q4', 'scope': 'Federal', 'short': '1120-W Q4',
      'title': 'Fed Est. Tax - Installment 4', 'due_type': 'fixed', 'due_month': 12, 'due_day': 15,
      'due_text': 'December 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/',
      'info': 'Estimated tax.'},
-    {'key': 'de_c_est_4', 'num': 19, 'quarter': 'Q4', 'scope': 'Delaware', 'short': 'DE Est. Tax Q4',
+    {'key': 'de_c_est_4', 'num': 22, 'quarter': 'Q4', 'scope': 'Delaware', 'short': 'DE Est. Tax Q4',
      'title': 'DE Est. Corporate Income Tax - Q4', 'due_type': 'fixed', 'due_month': 12, 'due_day': 15,
      'due_text': 'December 15', 'portal_name': 'DE Taxpayer Portal', 'portal_url': 'https://tax.delaware.gov/',
      'info': 'State estimated tax.'},
 
     # Rolling / Anniversary Deadlines
-    {'key': 'de_c_boi', 'num': 20, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
+    {'key': 'de_c_boi', 'num': 23, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing',
      'portal_url': 'https://boiefiling.fincen.gov/', 'info': 'CTA reporting.'},
-    {'key': 'de_c_grt', 'num': 21, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'DE Gross Receipts',
+    {'key': 'de_c_grt', 'num': 24, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'DE Gross Receipts',
      'title': 'Delaware Gross Receipts Tax', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Monthly/Quarterly based on volume', 'portal_name': 'DE Taxpayer Portal',
      'portal_url': 'https://tax.delaware.gov/',
      'info': 'Required if operating physically in DE.'},
-    {'key': 'de_c_agent', 'num': 22, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'Registered Agent',
+    {'key': 'de_c_agent', 'num': 25, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'Registered Agent',
      'title': 'DE Registered Agent Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Agent Portal', 'portal_url': 'https://www.vcorpservices.com/',
      'info': 'Failure to pay results in resignation and loss of corporate good standing.'},
-    {'key': 'de_c_minutes', 'num': 23, 'quarter': 'ROLL', 'scope': 'Internal', 'short': 'Board Minutes',
+    {'key': 'de_c_minutes', 'num': 26, 'quarter': 'ROLL', 'scope': 'Internal', 'short': 'Board Minutes',
      'title': 'Annual Board of Directors Meetings & Minutes', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Internal', 'portal_url': '#',
      'info': 'Execute Unanimous Written Consents.'},
-    {'key': 'de_c_foreign', 'num': 24, 'quarter': 'ROLL', 'scope': 'State', 'short': 'Foreign Qual.',
+    {'key': 'de_c_foreign', 'num': 27, 'quarter': 'ROLL', 'scope': 'State', 'short': 'Foreign Qual.',
      'title': 'Foreign Qualification Annual Reports', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Varies by operating state', 'portal_name': 'Foreign SOS',
      'portal_url': 'https://www.usa.gov/state-government',
-     'info': 'Maintain good standing in states where the C-Corp has operations.'}
+     'info': 'Maintain good standing in states where the C-Corp has operations.'},
+    {'key': 'de_c_gl', 'num': 28, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Gen. Liab.',
+     'title': 'General Liability Insurance Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#',
+     'info': 'Covers physical premise injuries and property damage.'},
+    {'key': 'de_c_do', 'num': 29, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'D&O Insurance',
+     'title': 'Directors & Officers Liability Insurance', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#',
+     'info': 'Protects board members from personal liability.'},
+    {'key': 'de_c_wc', 'num': 30, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Workers Comp',
+     'title': 'Workers Compensation Insurance Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#',
+     'info': 'Statutory requirement in most states for any W-2 employees.'}
 ]
 
 PEBBLE_TASKS = [
