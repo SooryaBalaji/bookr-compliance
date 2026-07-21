@@ -26,6 +26,7 @@ from app.seed_data import (
     CORE_TASKS,
     CA_FOR_PROFIT_TASKS,
     DELAWARE_CCORP_TASKS,
+    GENERAL_CORP_TASKS,
     PEBBLE_TASKS,
     NON_PROFIT_TASKS,
     GENERAL_LLC_TASKS
@@ -359,6 +360,8 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
             template = list(DELAWARE_CCORP_TASKS)
         elif "corp" in org and state == "California":
             template = list(CA_FOR_PROFIT_TASKS)
+        elif "corp" in org:
+            template = list(GENERAL_CORP_TASKS)
         else:
             template = list(CORE_TASKS)
 
