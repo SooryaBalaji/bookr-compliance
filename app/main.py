@@ -349,11 +349,16 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         template = list(PEBBLE_TASKS)
     else:
         org = payload.org_type.lower()
+        state = payload.incorporation_state.value
 
         if "non-profit" in org:
             template = list(NON_PROFIT_TASKS)
         elif "llc" in org:
             template = list(GENERAL_LLC_TASKS)
+        elif "corp" in org and state == "Delaware":
+            template = list(DELAWARE_CCORP_TASKS)
+        elif "corp" in org and state == "California":
+            template = list(CA_FOR_PROFIT_TASKS)
         else:
             template = list(CORE_TASKS)
 
