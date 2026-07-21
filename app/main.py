@@ -349,8 +349,14 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if (payload.role == "super_admin" or user.role == "super_admin") and admin.role != "super_admin":
-        raise HTTPException(status_code=403, detail="Only Super Admins can grant or revoke Super Admin privileges.")
+    # Co-Admins may only move a user between Editor and Viewer — touching anyone who
+    # is or would become Co-Admin/Super Admin (either side of the change) requires
+    # Super Admin, closing the "create a Viewer, then promote them to Co-Admin"
+    # loophole around the Editor/Viewer-only restriction on account creation below.
+    if admin.role != "super_admin" and (
+        payload.role not in ("editor", "viewer") or user.role not in ("editor", "viewer")
+    ):
+        raise HTTPException(status_code=403, detail="Co-Admins can only manage Editor/Viewer roles.")
 
     if user.role == "super_admin" and payload.role != "super_admin":
         # Lock before counting: two concurrent demotes of two different super_admins
@@ -379,8 +385,9 @@ async def create_user(payload: AdminUserCreate, db: AsyncSession = Depends(get_d
                       admin: models.User = Depends(get_current_admin)):
     if payload.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
-    if payload.role == "super_admin" and admin.role != "super_admin":
-        raise HTTPException(status_code=403, detail="Only Super Admins can create Super Admin accounts.")
+    # Super Admin can create any role; Co-Admin is limited to Editor/Viewer.
+    if admin.role != "super_admin" and payload.role not in ("editor", "viewer"):
+        raise HTTPException(status_code=403, detail="Co-Admins can only create Editor or Viewer accounts.")
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
