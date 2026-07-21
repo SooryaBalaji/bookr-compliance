@@ -4,11 +4,22 @@ services:
   # The Backend
   web:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    # NOTE for real deployments: this bind-mounts the working directory over the
+    # built image (convenient for local hot-reload-free dev), so the container
+    # actually runs the host's files, not what got tested/built. Drop the `.:/app`
+    # line in a production override so the container runs the immutable built image.
     volumes:
       - .:/app
       - ./app/uploads:/app/app/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/auth/is-initialized')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     environment:
       # Defaults match the db service's own defaults below, for a friction-free
       # local `docker-compose up`. Real deployments MUST override
@@ -34,6 +45,7 @@ services:
   # The Database
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pass}
@@ -49,6 +61,7 @@ services:
   # The Cache
   cache:
     image: redis:7-alpine
+    restart: unless-stopped
 
 volumes:
   db-data:

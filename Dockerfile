@@ -17,5 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 6. The Code: Copy all your Python and HTML files into the container
 COPY . .
 
-# 7. The Ignition: The exact command to boot the server when the container turns on
+# 7. Run as a non-root user — the app has no reason to run as root inside the container.
+RUN useradd --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+# 8. The Ignition: The exact command to boot the server when the container turns on
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
