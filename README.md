@@ -18,6 +18,10 @@ Regulatory compliance and automated corporate filing tracker for Bookr, Inc.
 3. Open `http://localhost:8000`.
 4. The **first account you register becomes an admin**; everyone after that registers as a regular member. There's no invite system yet — anyone with access to the login page can create an account. If you're deploying this somewhere reachable outside your team, turn off open registration or put it behind a VPN/allowlist first.
 
+### Deploying somewhere real
+
+Copy `.env.production.example` to `.env` on the server instead of the dev template, and set `ENVIRONMENT=production`. This enforces a real `SECRET_KEY` (no insecure dev fallback) and marks the auth cookie `Secure`, so the app **must** sit behind TLS (e.g. a reverse proxy terminating HTTPS) — the cookie won't be sent at all over plain HTTP once `ENVIRONMENT=production` is set. Also set `ALLOWED_ORIGINS` to your real domain(s).
+
 ## Data model
 
 - `tasks` — every compliance milestone, both the ~32 built-in federal/state/insurance filings (seeded automatically on first boot) and any custom ones you add. Deleting a task soft-deletes it (`deleted=true`) rather than removing history.
