@@ -38,15 +38,16 @@ STATE_TASKS_MAP = {
     "Colorado": [
         {'key': 'co_periodic', 'num': 51, 'quarter': 'ROLL', 'scope': 'Colorado', 'short': 'CO Periodic Report',
          'title': 'Colorado Periodic Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-         'due_text': 'Anniversary Month', 'portal_name': 'CO SOS Business Portal',
+         'due_text': 'End of 2nd Month After Anniversary Month', 'portal_name': 'CO SOS Business Portal',
          'portal_url': 'https://www.sos.state.co.us/',
-         'info': 'Annual filing due during anniversary month.'}
+         'info': 'Filing window runs from 2 months before the anniversary month through the end of the 2nd month after it (C.R.S. §7-90-501); not delinquent until that window closes.'}
     ],
     "Connecticut": [
         {'key': 'ct_ar', 'num': 52, 'quarter': 'Q1', 'scope': 'Connecticut', 'short': 'CT Annual Report',
          'title': 'Connecticut Annual Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
-         'due_text': 'March 31', 'portal_name': 'CT CONCORD', 'portal_url': 'https://service.ct.gov/',
-         'info': 'Annual report required for LLCs and Corporations.'}
+         'due_text': 'March 31 (LLC/LP/LLP) — Corps file by end of anniversary month instead',
+         'portal_name': 'CT CONCORD', 'portal_url': 'https://service.ct.gov/',
+         'info': 'LLCs, LPs, and LLPs file by March 31. Stock and non-stock Corporations instead file by the last day of their anniversary month, not March 31.'}
     ],
     "Delaware": [
         {'key': 'de_fran_tax', 'num': 53, 'quarter': 'Q1', 'scope': 'Delaware', 'short': 'DE Franchise Tax',
@@ -297,8 +298,9 @@ STATE_TASKS_MAP = {
     "Vermont": [
         {'key': 'vt_ar', 'num': 90, 'quarter': 'Q1', 'scope': 'Vermont', 'short': 'VT Annual Report',
          'title': 'Vermont Annual Report', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
-         'due_text': 'March 31', 'portal_name': 'VT Online Services', 'portal_url': 'https://bizfilings.vermont.gov/',
-         'info': 'Filing due within 2.5 months post fiscal year close.'}
+         'due_text': 'March 31 (LLC) — Corps file within 2.5 months of fiscal year close instead',
+         'portal_name': 'VT Online Services', 'portal_url': 'https://bizfilings.vermont.gov/',
+         'info': "LLCs file within 3 months of fiscal year close (March 31 for a calendar year). Corporations file within 2.5 months instead (~March 16 for a calendar year), per 11 V.S.A. Section 16.22."}
     ],
     "Virginia": [
         {'key': 'va_ar', 'num': 91, 'quarter': 'ROLL', 'scope': 'Virginia', 'short': 'VA Annual Registration',
@@ -485,9 +487,9 @@ CORE_TASKS = [
      'info': 'Demographic workforce data required if crossing the 100-employee threshold.'},
     {'key': 'bk_boi', 'num': 31, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information Update', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing',
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing',
      'portal_url': 'https://boiefiling.fincen.gov/',
-     'info': 'Updates to controlling persons under the Corporate Transparency Act.'},
+     'info': "As of FinCEN's March 2025 interim final rule, all entities formed in the U.S. (and their beneficial owners) are exempt from BOI reporting — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes to this exemption."},
     {'key': 'bk_agent', 'num': 32, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'Registered Agent',
      'title': 'Registered Agent Annual Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Vcorp Portal', 'portal_url': 'https://www.vcorpservices.com/',
@@ -689,8 +691,9 @@ CA_FOR_PROFIT_TASKS = [
     # Rolling / Anniversary Deadlines
     {'key': 'ca_c_boi', 'num': 28, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing',
-     'portal_url': 'https://boiefiling.fincen.gov/', 'info': 'CTA reporting.'},
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing',
+     'portal_url': 'https://boiefiling.fincen.gov/',
+     'info': "Exempt for U.S.-formed entities under FinCEN's March 2025 interim final rule — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes."},
     {'key': 'ca_c_newhire', 'num': 29, 'quarter': 'ROLL', 'scope': 'California', 'short': 'DE 34',
      'title': 'CA EDD Report of New Hire', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Within 20 days of hire', 'portal_name': 'CA EDD',
@@ -821,8 +824,9 @@ DELAWARE_CCORP_TASKS = [
     # Rolling / Anniversary Deadlines
     {'key': 'de_c_boi', 'num': 23, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing',
-     'portal_url': 'https://boiefiling.fincen.gov/', 'info': 'CTA reporting.'},
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing',
+     'portal_url': 'https://boiefiling.fincen.gov/',
+     'info': "Exempt for U.S.-formed entities under FinCEN's March 2025 interim final rule — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes."},
     {'key': 'de_c_grt', 'num': 24, 'quarter': 'ROLL', 'scope': 'Delaware', 'short': 'DE Gross Receipts',
      'title': 'Delaware Gross Receipts Tax', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Monthly/Quarterly based on volume', 'portal_name': 'DE Taxpayer Portal',
@@ -939,9 +943,9 @@ PEBBLE_TASKS = [
     # Rolling / Anniversary Deadlines
     {'key': 'peb_boi', 'num': 18, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of any change', 'portal_name': 'FinCEN E-Filing',
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing',
      'portal_url': 'https://boiefiling.fincen.gov/',
-     'info': 'Reports individuals who directly or indirectly own/control Pebble Impact LLC.'},
+     'info': "Exempt under FinCEN's March 2025 interim final rule, which excuses all U.S.-formed entities (including Pebble Impact LLC) from BOI reporting — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes."},
     {'key': 'peb_soi', 'num': 19, 'quarter': 'ROLL', 'scope': 'California', 'short': 'CA LLC-20',
      'title': 'Statement of Information (Form LLC-20)', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Biennially', 'portal_name': 'bizfile Online', 'portal_url': 'https://bizfileonline.sos.ca.gov/',
@@ -1089,9 +1093,9 @@ GENERAL_LLC_TASKS = [
     # Rolling / Anniversary Deadlines
     {'key': 'gen_boi', 'num': 9, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing',
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing',
      'portal_url': 'https://boiefiling.fincen.gov/',
-     'info': 'Mandatory reporting under the Corporate Transparency Act.'},
+     'info': "Exempt under FinCEN's March 2025 interim final rule — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes."},
     {'key': 'gen_state_ar', 'num': 10, 'quarter': 'ROLL', 'scope': 'State', 'short': 'State AR',
      'title': 'Secretary of State Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Secretary of State Portal',
@@ -1186,7 +1190,8 @@ GENERAL_CORP_TASKS = [
     # Rolling / Anniversary Deadlines
     {'key': 'gc_boi', 'num': 17, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
      'title': 'Beneficial Ownership Information Update', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
-     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing', 'portal_url': 'https://boiefiling.fincen.gov/', 'info': 'Updates to controlling persons under the Corporate Transparency Act.'},
+     'due_text': 'Exempt for U.S.-domestic entities (as of 2025)', 'portal_name': 'FinCEN E-Filing', 'portal_url': 'https://boiefiling.fincen.gov/',
+     'info': "Exempt under FinCEN's March 2025 interim final rule — only foreign companies registered to do business in the U.S. must still file. Monitor FinCEN.gov for changes."},
     {'key': 'gc_state_ar', 'num': 18, 'quarter': 'ROLL', 'scope': 'State', 'short': 'State AR',
      'title': 'Secretary of State Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Secretary of State Portal', 'portal_url': 'https://www.usa.gov/state-government', 'info': 'Maintains corporate good standing. Deadline depends on state of incorporation.'},
