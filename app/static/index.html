@@ -224,7 +224,13 @@
           </div>
           <div class="field">
             <label>Password</label>
-            <input type="password" id="authPassword" placeholder="••••••••" style="padding: 10px; font-size: 14px;">
+            <div style="position: relative;">
+              <input type="password" id="authPassword" placeholder="••••••••" style="padding: 10px; padding-right: 40px; font-size: 14px; width: 100%; box-sizing: border-box;">
+              <button type="button" id="authPasswordToggle" aria-label="Show password" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--ink-faint); display: flex; align-items: center;">
+                <svg id="authPasswordToggleIconOpen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg id="authPasswordToggleIconClosed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.4 19.4 0 0 1 4.22-5.36M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a19.5 19.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+              </button>
+            </div>
           </div>
 
           <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -438,13 +444,26 @@
       headers['Content-Type'] = 'application/json';
     }
     const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
-    if (res.status === 401) {
+    // A 401 from /auth/login or /auth/register means "wrong credentials" / "not
+    // allowed", not "your existing session expired" - only treat 401s from other
+    // (authenticated) endpoints as a session expiry.
+    if (res.status === 401 && path !== '/auth/login' && path !== '/auth/register') {
       CURRENT_USER = null;
       throw new Error('Session expired. Page reloading...');
     }
     if (!res.ok) {
       let detail = 'Request failed';
-      try { detail = (await res.json()).detail || detail; } catch (e) {}
+      try {
+        const body = await res.json();
+        if (Array.isArray(body.detail)) {
+          // FastAPI/Pydantic validation errors: an array of {msg, loc, ...} objects,
+          // not a plain string - stringify them properly instead of letting them
+          // coerce to "[object Object]".
+          detail = body.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+        } else if (body.detail) {
+          detail = body.detail;
+        }
+      } catch (e) {}
       throw new Error(detail);
     }
     if (res.status === 204) return null;
@@ -459,6 +478,12 @@
     const password = document.getElementById('authPassword').value;
     const errBox = document.getElementById('authError');
     errBox.style.display = 'none';
+
+    if (!email || !password) {
+      errBox.textContent = 'Email and password are required.';
+      errBox.style.display = 'block';
+      return;
+    }
     try {
       const body = new URLSearchParams();
       body.set('username', email);
@@ -553,7 +578,7 @@
     document.body.style.pointerEvents = 'none';
     try { await apiFetch('/auth/logout', { method: 'POST' }); } catch (e) {}
 
-    setTimeout(() => {
+    setTimeout(async () => {
       CURRENT_USER = null; TASKS = []; STATE_LOGS = [];
       document.getElementById('mainContent').innerHTML = '';
       document.getElementById('adminOverlay').classList.remove('open');
@@ -563,6 +588,7 @@
       btn.style.opacity = '1';
       btn.disabled = false;
       document.getElementById('authPassword').value = '';
+      await checkSystemStatus();
       showAuthScreen();
     }, 900);
   }
@@ -572,6 +598,17 @@
     document.getElementById('authInitBtn').addEventListener('click', registerFirstAdmin);
     document.getElementById('authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuthForm(); });
     document.getElementById('logoutBtn').addEventListener('click', logOut);
+    document.getElementById('authPasswordToggle').addEventListener('click', () => {
+      const input = document.getElementById('authPassword');
+      const openIcon = document.getElementById('authPasswordToggleIconOpen');
+      const closedIcon = document.getElementById('authPasswordToggleIconClosed');
+      const toggleBtn = document.getElementById('authPasswordToggle');
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      openIcon.style.display = showing ? '' : 'none';
+      closedIcon.style.display = showing ? 'none' : '';
+      toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
     await checkSystemStatus();
     try {
       CURRENT_USER = await apiFetch('/auth/me');
@@ -583,7 +620,7 @@
   // UPDATED: Added activeEntity tracking
   let TASKS = [];
   let STATE_LOGS = [];
-  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: 'all' };
+  let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: null };
 
   function calculateTargetDate(year, month, day) {
     let targetDate = new Date(year, month - 1, day);
@@ -854,7 +891,7 @@
   function getFilteredTasks() {
     return TASKS.filter(t => {
       // NEW: Filter out tasks if an entity is selected
-      if (state.activeEntity !== 'all' && t.entity !== state.activeEntity) return false;
+      if (state.activeEntity && t.entity !== state.activeEntity) return false;
 
       if (!state.selectedScopes.includes(t.scope)) return false;
       const status = getTaskStatus(t);
@@ -894,14 +931,10 @@
 
       const uniqueEntities = [...new Set(TASKS.map(t => t.entity))].filter(Boolean);
 
-      // Global Portfolio Button
-      const allBtn = document.createElement('button');
-      allBtn.className = `btn mini ${state.activeEntity === 'all' ? 'primary' : 'ghost'}`;
-      allBtn.style.textAlign = 'left';
-      allBtn.style.padding = '6px 12px';
-      allBtn.textContent = 'Global Portfolio (All)';
-      allBtn.onclick = () => { state.activeEntity = 'all'; render(); };
-      container.appendChild(allBtn);
+      // There's no more "all orgs at once" view - always land on a real organization.
+      if (!state.activeEntity || !uniqueEntities.includes(state.activeEntity)) {
+        state.activeEntity = uniqueEntities[0] || null;
+      }
 
       // Buttons for each specific entity
       uniqueEntities.forEach(ent => {
@@ -925,7 +958,7 @@
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
     // NEW: Update Dashboard Title dynamically based on active entity
-    let prefix = state.activeEntity === 'all' ? 'Global Portfolio' : state.activeEntity;
+    let prefix = state.activeEntity || 'No Organization';
 
     if (state.currentView === 'calendar') {
       const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -1120,7 +1153,7 @@
 
     // Apply the entity filter to logs if an active entity is selected
     let logsToRender = STATE_LOGS;
-    if (state.activeEntity !== 'all') {
+    if (state.activeEntity) {
        const activeTaskIds = TASKS.filter(t => t.entity === state.activeEntity).map(t => t.id);
        logsToRender = STATE_LOGS.filter(l => activeTaskIds.includes(l.taskId));
     }
