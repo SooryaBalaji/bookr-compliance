@@ -102,6 +102,26 @@ async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int)
     return True
 
 
+async def get_admin_entity_ids(db: AsyncSession, admin: models.User) -> set:
+    """Entities a co_admin is a member of. Callers must special-case super_admin (global access)."""
+    res = await db.execute(select(models.EntityMember.entity_id).where(models.EntityMember.user_id == admin.id))
+    return set(res.scalars().all())
+
+
+async def verify_shared_org_access(db: AsyncSession, admin: models.User, target_user_id: int):
+    """For a co_admin, ensures the target user shares at least one org with them. Super Admins bypass."""
+    if admin.role == "super_admin":
+        return True
+    admin_entities = await get_admin_entity_ids(db, admin)
+    if admin_entities:
+        res = await db.execute(select(models.EntityMember.entity_id).where(
+            models.EntityMember.user_id == target_user_id, models.EntityMember.entity_id.in_(admin_entities)
+        ))
+        if res.scalars().first():
+            return True
+    raise HTTPException(status_code=403, detail="Cross-organization security violation blocked.")
+
+
 # Auth & User Management
 @app.post("/auth/register")
 async def register(payload: schemas.UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
@@ -216,7 +236,18 @@ async def read_me(current_user: models.User = Depends(get_current_user)):
 
 @app.get("/users/", response_model=List[schemas.UserResponse])
 async def list_users(db: AsyncSession = Depends(get_db), admin: models.User = Depends(get_current_admin)):
-    result = await db.execute(select(models.User))
+    if admin.role == "super_admin":
+        result = await db.execute(select(models.User))
+        return result.scalars().all()
+
+    # Co-Admins only see users who share at least one org with them.
+    admin_entities = await get_admin_entity_ids(db, admin)
+    if not admin_entities:
+        return []
+    user_ids_res = await db.execute(
+        select(models.EntityMember.user_id).where(models.EntityMember.entity_id.in_(admin_entities)).distinct()
+    )
+    result = await db.execute(select(models.User).where(models.User.id.in_(user_ids_res.scalars().all())))
     return result.scalars().all()
 
 
@@ -234,10 +265,18 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Only a Super Admin may grant or revoke Super Admin privileges — otherwise a
+    # Co-Admin could simply promote themselves (or anyone) to Super Admin.
+    if (payload.role == "super_admin" or user.role == "super_admin") and admin.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admins can grant or revoke Super Admin privileges.")
+
     if user.role == "super_admin" and payload.role != "super_admin":
         admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot demote the last remaining Super Admin.")
+
+    # Co-Admins may only manage users who share at least one org with them.
+    await verify_shared_org_access(db, admin, user.id)
 
     user.role = payload.role
     await db.commit()
@@ -256,6 +295,8 @@ async def create_user(payload: AdminUserCreate, db: AsyncSession = Depends(get_d
                       admin: models.User = Depends(get_current_admin)):
     if payload.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
+    if payload.role == "super_admin" and admin.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admins can create Super Admin accounts.")
     existing = await db.execute(select(models.User).where(models.User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already exists")
@@ -279,6 +320,10 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
         admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot delete the last remaining Super Admin.")
+
+    # Co-Admins may only delete users who share at least one org with them.
+    await verify_shared_org_access(db, admin, target_user.id)
+
     await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
@@ -343,6 +388,9 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found.")
 
+    # Co-Admins may only manage membership for orgs they themselves belong to.
+    await verify_org_access(db, current_admin, entity_id)
+
     existing = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == payload.admin_id, models.EntityMember.entity_id == entity_id
     ))
@@ -356,6 +404,10 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
 async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
                                  current_admin: models.User = Depends(get_current_admin)):
     #Removes a user's access to a specific organization without deleting their account
+
+    # Co-Admins may only manage membership for orgs they themselves belong to.
+    await verify_org_access(db, current_admin, entity_id)
+
     existing = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == user_id, models.EntityMember.entity_id == entity_id
     ))
@@ -376,20 +428,40 @@ async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found.")
 
+    # Co-Admins may only delete orgs they themselves belong to.
+    await verify_org_access(db, current_admin, entity_id)
+
     await db.delete(entity)
     await db.commit()
     return {"status": "success", "message": "Entity and associated records purged."}
 
 @app.get("/entities/", response_model=List[schemas.EntityResponse])
 async def list_entities(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
-    res = await db.execute(select(models.Entity))
+    if current_admin.role == "super_admin":
+        res = await db.execute(select(models.Entity))
+        return res.scalars().all()
+
+    # Co-Admins only see orgs they themselves belong to.
+    admin_entities = await get_admin_entity_ids(db, current_admin)
+    if not admin_entities:
+        return []
+    res = await db.execute(select(models.Entity).where(models.Entity.id.in_(admin_entities)))
     return res.scalars().all()
 
 
 @app.get("/memberships/")
 async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
     #Returns all user-entity assignments to build the Admin mapping table
-    res = await db.execute(select(models.EntityMember))
+    query = select(models.EntityMember)
+
+    if current_admin.role != "super_admin":
+        # Co-Admins only see membership rows for orgs they themselves belong to.
+        admin_entities = await get_admin_entity_ids(db, current_admin)
+        if not admin_entities:
+            return []
+        query = query.where(models.EntityMember.entity_id.in_(admin_entities))
+
+    res = await db.execute(query)
     memberships = res.scalars().all()
 
     # Returns a simple list of dicts for the frontend to parse
