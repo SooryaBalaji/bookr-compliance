@@ -15,6 +15,9 @@ services:
       - REDIS_URL=redis://cache:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - MASTER_RESET_KEY=${MASTER_RESET_KEY}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      - SQL_ECHO=${SQL_ECHO:-false}
     depends_on:
       db:
         condition: service_healthy

@@ -1,9 +1,11 @@
 import os
 import base64
+import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Response
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -12,6 +14,8 @@ from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("bookr.compliance")
 
 from app.database import engine, Base, get_db
 from app import models, schemas
@@ -39,7 +43,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
+
+# Browsers reject `allow_origins=["*"]` combined with `allow_credentials=True`
+# for cookie-based requests, and it's insecure practice regardless. Set
+# ALLOWED_ORIGINS as a comma-separated list in the environment for each
+# deployment (e.g. "https://app.bookr.com,https://staging.bookr.com").
+_allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
+ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
 
 # Mount static frontend
@@ -149,24 +161,51 @@ async def logout(response: Response):
 
 class EmergencyResetPayload(BaseModel):
     email: str
-    new_password: str
+    new_password: str = Field(..., min_length=8)
     master_key: str
 
 
+# Simple in-memory rate limiter for the emergency-reset endpoint.
+# NOTE: this resets on process restart and does not share state across
+# multiple worker processes/containers. For a multi-instance deployment,
+# back this with Redis (already available in this stack) instead.
+_emergency_reset_attempts: dict[str, list[float]] = {}
+_EMERGENCY_RESET_WINDOW_SECONDS = 15 * 60
+_EMERGENCY_RESET_MAX_ATTEMPTS = 5
+
+
+def _check_emergency_reset_rate_limit(client_ip: str):
+    now = time.time()
+    attempts = _emergency_reset_attempts.setdefault(client_ip, [])
+    attempts[:] = [t for t in attempts if now - t < _EMERGENCY_RESET_WINDOW_SECONDS]
+    if len(attempts) >= _EMERGENCY_RESET_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many reset attempts. Try again later.")
+    attempts.append(now)
+
+
 @app.post("/auth/emergency-reset")
-async def emergency_password_reset(payload: EmergencyResetPayload, db: AsyncSession = Depends(get_db)):
+async def emergency_password_reset(payload: EmergencyResetPayload, request: Request,
+                                   db: AsyncSession = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    _check_emergency_reset_rate_limit(client_ip)
+
     expected_key = os.getenv("MASTER_RESET_KEY")
     if not expected_key or payload.master_key != expected_key:
+        logger.warning("Emergency reset: invalid master key attempt from %s for %s", client_ip, payload.email)
         raise HTTPException(status_code=403, detail="Invalid or disabled master key.")
 
     result = await db.execute(select(models.User).where(models.User.email == payload.email))
     user = result.scalar_one_or_none()
 
+    # Deliberately generic response so this endpoint can't be used to
+    # enumerate which emails have accounts.
     if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
+        logger.warning("Emergency reset: valid key, unknown email %s from %s", payload.email, client_ip)
+        raise HTTPException(status_code=400, detail="Reset could not be completed.")
 
     user.password_hash = hash_password(payload.new_password)
     await db.commit()
+    logger.warning("Emergency reset: password forcefully reset for %s from %s", payload.email, client_ip)
     return {"status": "success", "message": "Password forcefully reset."}
 
 
@@ -497,12 +536,15 @@ async def is_initialized(db: AsyncSession = Depends(get_db)):
     return {"initialized": admin_exists}
 
 @app.patch("/tasks/{task_id}")
-async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
+async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db),
+                      editor: models.User = Depends(get_current_editor)):
     result = await db.execute(select(models.Task).where(models.Task.id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    await verify_org_access(db, editor, task.entity_id)
 
     task.due_type = update_data.due_type
     task.due_month = update_data.due_month
