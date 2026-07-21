@@ -14,6 +14,7 @@ from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
+import redis.asyncio as aioredis
 
 logger = logging.getLogger("bookr.compliance")
 
@@ -32,34 +33,46 @@ from app.seed_data import (
 )
 
 VALID_ROLES = ["super_admin", "co_admin", "editor", "viewer"]
+ALLOWED_MIME_TYPES = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp"
+}
+
+redis_client: Optional[aioredis.Redis] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global redis_client
+    redis_url = os.getenv("REDIS_URL", "redis://cache:6379/0")
+    try:
+        redis_client = aioredis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+    except Exception as e:
+        logger.warning("Redis connection disabled or unreachable: %s", e)
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
+    if redis_client:
+        await redis_client.close()
     await engine.dispose()
 
 
 app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
 
-# Browsers reject `allow_origins=["*"]` combined with `allow_credentials=True`
-# for cookie-based requests, and it's insecure practice regardless. Set
-# ALLOWED_ORIGINS as a comma-separated list in the environment for each
-# deployment (e.g. "https://app.bookr.com,https://staging.bookr.com").
 _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
 ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
 
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
 
-# Mount static frontend
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# Mount dynamic uploads directory for Base64 extracted files
 UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
@@ -77,7 +90,7 @@ async def serve_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
-# RBAC Dependencies & Verification
+# RBAC & Organizational Verification
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):
     if current_user.role not in ["super_admin", "co_admin"]:
         raise HTTPException(status_code=403, detail="Admin privileges required")
@@ -91,9 +104,18 @@ async def get_current_editor(current_user: models.User = Depends(get_current_use
 
 
 async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int):
-    #Verifies that the user has been granted access to this specific organization
+    """Ensures user belongs to organization and enforces hard exclusivity on restricted entities."""
     if user.role == "super_admin":
         return True
+
+    entity_res = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
+    entity = entity_res.scalar_one_or_none()
+    if not entity:
+        raise HTTPException(status_code=404, detail="Organization entity not found.")
+
+    if entity.is_restricted:
+        raise HTTPException(status_code=403, detail="Access denied. Restricted entity records are locked to Super Admins.")
+
     res = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == user.id, models.EntityMember.entity_id == entity_id
     ))
@@ -103,13 +125,11 @@ async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int)
 
 
 async def get_admin_entity_ids(db: AsyncSession, admin: models.User) -> set:
-    #Entities a co_admin is a member of Callers must special-case super_admin (global access)
     res = await db.execute(select(models.EntityMember.entity_id).where(models.EntityMember.user_id == admin.id))
     return set(res.scalars().all())
 
 
 async def verify_shared_org_access(db: AsyncSession, admin: models.User, target_user_id: int):
-    #For a co_admin, ensures the target user shares at least one org with them. Super Admins bypass
     if admin.role == "super_admin":
         return True
     admin_entities = await get_admin_entity_ids(db, admin)
@@ -148,7 +168,7 @@ async def register(payload: schemas.UserCreate, response: Response, db: AsyncSes
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=60 * 24 * 7 * 60  # 7 days
+        max_age=60 * 24 * 7 * 60
     )
     return {"status": "success", "user": user.email}
 
@@ -168,7 +188,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=60 * 24 * 7 * 60  # 7 days
+        max_age=60 * 24 * 7 * 60
     )
     return {"status": "success", "user": user.email}
 
@@ -185,29 +205,35 @@ class EmergencyResetPayload(BaseModel):
     master_key: str
 
 
-# Simple in-memory rate limiter for the emergency-reset endpoint.
-# NOTE: this resets on process restart and does not share state across
-# multiple worker processes/containers. For a multi-instance deployment,
-# back this with Redis (already available in this stack) instead.
-_emergency_reset_attempts: dict[str, list[float]] = {}
 _EMERGENCY_RESET_WINDOW_SECONDS = 15 * 60
 _EMERGENCY_RESET_MAX_ATTEMPTS = 5
 
 
-def _check_emergency_reset_rate_limit(client_ip: str):
-    now = time.time()
-    attempts = _emergency_reset_attempts.setdefault(client_ip, [])
-    attempts[:] = [t for t in attempts if now - t < _EMERGENCY_RESET_WINDOW_SECONDS]
-    if len(attempts) >= _EMERGENCY_RESET_MAX_ATTEMPTS:
-        raise HTTPException(status_code=429, detail="Too many reset attempts. Try again later.")
-    attempts.append(now)
+async def _check_emergency_reset_rate_limit(client_ip: str):
+    if not redis_client:
+        return  # Fallback to unrestricted if Redis is disabled in dev
+
+    key = f"rate_limit:emergency_reset:{client_ip}"
+    try:
+        current_attempts = await redis_client.get(key)
+        if current_attempts and int(current_attempts) >= _EMERGENCY_RESET_MAX_ATTEMPTS:
+            raise HTTPException(status_code=429, detail="Too many reset attempts. Try again later.")
+
+        pipe = redis_client.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, _EMERGENCY_RESET_WINDOW_SECONDS)
+        await pipe.execute()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("Redis rate limiter error: %s", e)
 
 
 @app.post("/auth/emergency-reset")
 async def emergency_password_reset(payload: EmergencyResetPayload, request: Request,
                                    db: AsyncSession = Depends(get_db)):
     client_ip = request.client.host if request.client else "unknown"
-    _check_emergency_reset_rate_limit(client_ip)
+    await _check_emergency_reset_rate_limit(client_ip)
 
     expected_key = os.getenv("MASTER_RESET_KEY")
     if not expected_key or payload.master_key != expected_key:
@@ -217,8 +243,6 @@ async def emergency_password_reset(payload: EmergencyResetPayload, request: Requ
     result = await db.execute(select(models.User).where(models.User.email == payload.email))
     user = result.scalar_one_or_none()
 
-    # Deliberately generic response so this endpoint can't be used to
-    # enumerate which emails have accounts.
     if not user:
         logger.warning("Emergency reset: valid key, unknown email %s from %s", payload.email, client_ip)
         raise HTTPException(status_code=400, detail="Reset could not be completed.")
@@ -240,7 +264,6 @@ async def list_users(db: AsyncSession = Depends(get_db), admin: models.User = De
         result = await db.execute(select(models.User))
         return result.scalars().all()
 
-    # Co-Admins only see users who share at least one org with them.
     admin_entities = await get_admin_entity_ids(db, admin)
     if not admin_entities:
         return []
@@ -265,8 +288,6 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Only a Super Admin may grant or revoke Super Admin privileges — otherwise a
-    # Co-Admin could simply promote themselves (or anyone) to Super Admin.
     if (payload.role == "super_admin" or user.role == "super_admin") and admin.role != "super_admin":
         raise HTTPException(status_code=403, detail="Only Super Admins can grant or revoke Super Admin privileges.")
 
@@ -275,7 +296,6 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot demote the last remaining Super Admin.")
 
-    # Co-Admins may only manage users who share at least one org with them.
     await verify_shared_org_access(db, admin, user.id)
 
     user.role = payload.role
@@ -322,7 +342,6 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot delete the last remaining Super Admin.")
 
-    # Co-Admins may only delete users who share at least one org with them.
     await verify_shared_org_access(db, admin, target_user.id)
 
     await db.delete(target_user)
@@ -334,12 +353,16 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
 @app.post("/entities/", response_model=schemas.EntityResponse)
 async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depends(get_db),
                         admin: models.User = Depends(get_current_admin)):
+    # Auto-flag primary Bookr entities as restricted
+    is_restricted = payload.is_restricted or (payload.creation_template == "bookr")
+
     entity = models.Entity(
         name=payload.name,
         org_type=payload.org_type,
         incorporation_state=payload.incorporation_state.value,
         headquarters=payload.headquarters,
-        naics_code=payload.naics_code
+        naics_code=payload.naics_code,
+        is_restricted=is_restricted
     )
     db.add(entity)
     await db.commit()
@@ -364,7 +387,6 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         else:
             template = list(CORE_TASKS)
 
-    # 50-State Rules Engine Injection
     selected_state = payload.incorporation_state.value
     if selected_state in STATE_TASKS_MAP:
         state_specific_tasks = STATE_TASKS_MAP[selected_state]
@@ -379,6 +401,11 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         db.add(models.Task(is_core=True, deleted=False, **task_data))
 
     await db.commit()
+
+    if admin.role == "co_admin":
+        db.add(models.EntityMember(user_id=admin.id, entity_id=entity.id))
+        await db.commit()
+
     return entity
 
 
@@ -396,7 +423,6 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found.")
 
-    # Co-Admins may only manage membership for orgs they themselves belong to.
     await verify_org_access(db, current_admin, entity_id)
 
     existing = await db.execute(select(models.EntityMember).where(
@@ -412,9 +438,6 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
 @app.delete("/entities/{entity_id}/assign/{user_id}")
 async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
                                  current_admin: models.User = Depends(get_current_admin)):
-    # Removes a user's access to a specific organization without deleting their account
-
-    # Co-Admins may only manage membership for orgs they themselves belong to.
     await verify_org_access(db, current_admin, entity_id)
 
     existing = await db.execute(select(models.EntityMember).where(
@@ -432,13 +455,11 @@ async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession 
 @app.delete("/entities/{entity_id}")
 async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
                         current_admin: models.User = Depends(get_current_admin)):
-    # Deletes an entity and cascades to remove all associated tasks and logs
     result = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = result.scalar_one_or_none()
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found.")
 
-    # Co-Admins may only delete orgs they themselves belong to.
     await verify_org_access(db, current_admin, entity_id)
 
     await db.delete(entity)
@@ -452,21 +473,20 @@ async def list_entities(db: AsyncSession = Depends(get_db), current_admin: model
         res = await db.execute(select(models.Entity))
         return res.scalars().all()
 
-    # Co-Admins only see orgs they themselves belong to.
     admin_entities = await get_admin_entity_ids(db, current_admin)
     if not admin_entities:
         return []
-    res = await db.execute(select(models.Entity).where(models.Entity.id.in_(admin_entities)))
+    res = await db.execute(select(models.Entity).where(
+        models.Entity.id.in_(admin_entities), models.Entity.is_restricted == False
+    ))
     return res.scalars().all()
 
 
 @app.get("/memberships/")
 async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
-    # Returns all user-entity assignments to build the Admin mapping table
     query = select(models.EntityMember)
 
     if current_admin.role != "super_admin":
-        # Co-Admins only see membership rows for orgs they themselves belong to.
         admin_entities = await get_admin_entity_ids(db, current_admin)
         if not admin_entities:
             return []
@@ -474,12 +494,10 @@ async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: mo
 
     res = await db.execute(query)
     memberships = res.scalars().all()
-
-    # Returns a simple list of dicts for the frontend to parse
     return [{"id": m.id, "user_id": m.user_id, "entity_id": m.entity_id} for m in memberships]
 
 
-# Tasks & Logs (Protected)
+# Tasks & Logs
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
 async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
@@ -490,12 +508,11 @@ async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depend
             select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
         allowed_entities = mem_res.scalars().all()
 
-        # Security Override: Strip "Bookr, Inc." access for all non-super_admins
-        bookr_res = await db.execute(select(models.Entity.id).where(models.Entity.name == "Bookr, Inc."))
-        bookr_id = bookr_res.scalar_one_or_none()
+        # Dynamic Security Check: Exclude all restricted entities from non-super_admins
+        restr_res = await db.execute(select(models.Entity.id).where(models.Entity.is_restricted == True))
+        restricted_ids = set(restr_res.scalars().all())
 
-        if bookr_id and bookr_id in allowed_entities:
-            allowed_entities.remove(bookr_id)
+        allowed_entities = [e_id for e_id in allowed_entities if e_id not in restricted_ids]
 
         if not allowed_entities:
             return []
@@ -509,8 +526,10 @@ async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depend
 @app.post("/tasks/", response_model=schemas.TaskResponse)
 async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(get_db),
                       editor: models.User = Depends(get_current_editor)):
-    if payload.entity_id:
-        await verify_org_access(db, editor, payload.entity_id)
+    if not payload.entity_id:
+        raise HTTPException(status_code=400, detail="Entity assignment is mandatory.")
+
+    await verify_org_access(db, editor, payload.entity_id)
 
     key = f"cust_{int(__import__('time').time() * 1000)}"
     count_result = await db.execute(select(models.Task.id))
@@ -548,12 +567,10 @@ async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = 
             select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
         allowed_entities = mem_res.scalars().all()
 
-        # Security Override: Strip "Bookr, Inc." access for all non-super_admins
-        bookr_res = await db.execute(select(models.Entity.id).where(models.Entity.name == "Bookr, Inc."))
-        bookr_id = bookr_res.scalar_one_or_none()
+        restr_res = await db.execute(select(models.Entity.id).where(models.Entity.is_restricted == True))
+        restricted_ids = set(restr_res.scalars().all())
 
-        if bookr_id and bookr_id in allowed_entities:
-            allowed_entities.remove(bookr_id)
+        allowed_entities = [e_id for e_id in allowed_entities if e_id not in restricted_ids]
 
         if not allowed_entities:
             return []
@@ -580,17 +597,24 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
     if payload.file_data and payload.file_data.startswith("data:"):
         try:
             header, encoded = payload.file_data.split(",", 1)
-            file_ext = header.split(";")[0].split("/")[1]
+            mime_type = header.split(";")[0].split(":")[1].lower()
+
+            if mime_type not in ALLOWED_MIME_TYPES:
+                raise HTTPException(status_code=400, detail="Invalid file type. Allowed formats: PDF, JPG, PNG, WEBP.")
+
+            file_ext = ALLOWED_MIME_TYPES[mime_type]
             file_bytes = base64.b64decode(encoded)
-            filename = f"{uuid.uuid4().hex}.{file_ext}"
+            filename = f"{uuid.uuid4().hex}{file_ext}"
 
             os.makedirs(UPLOADS_DIR, exist_ok=True)
             saved_file_path = f"/uploads/{filename}"
 
             with open(os.path.join(UPLOADS_DIR, filename), "wb") as f:
                 f.write(file_bytes)
+        except HTTPException:
+            raise
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid base64 file data payload.")
+            raise HTTPException(status_code=400, detail="Invalid base64 file payload.")
 
     log_data = payload.model_dump()
     log_data["file_data"] = saved_file_path

@@ -81,6 +81,7 @@ class EntityCreate(BaseModel):
     headquarters: str
     naics_code: str
     creation_template: str
+    is_restricted: Optional[bool] = False
 
 class EntityResponse(BaseModel):
     id: int
@@ -89,6 +90,7 @@ class EntityResponse(BaseModel):
     incorporation_state: str
     headquarters: str
     naics_code: str
+    is_restricted: bool
     admin_id: Optional[int] = None
     class Config:
         from_attributes = True
@@ -109,7 +111,7 @@ class TaskCreate(BaseModel):
     target_year: Optional[int] = None
     entity_id: Optional[int] = None
     entity_name: Optional[str] = None
-    entity: Optional[str] = "Bookr, Inc."
+    entity: Optional[str] = None  # Explicitly None to prevent accidental fallback overrides
     portal_name: Optional[str] = None
     portal_url: Optional[str] = None
     alt_note: Optional[str] = None
@@ -139,7 +141,7 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
-#Compliance logs
+# Compliance logs
 class LogCreate(BaseModel):
     task_id: int
     fiscal_year: int

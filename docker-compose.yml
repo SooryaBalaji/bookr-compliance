@@ -8,17 +8,15 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-      # This ensures files uploaded by users are saved to the host machine
       - ./app/uploads:/app/app/uploads
     environment:
-      - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/compliance_db
+      - POSTGRES_USER=${POSTGRES_USER:-bookr_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
+      - POSTGRES_DB=${POSTGRES_DB:-compliance_db}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-bookr_admin}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-compliance_db}
       - REDIS_URL=redis://cache:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - MASTER_RESET_KEY=${MASTER_RESET_KEY}
-      # Defaults to development for a friction-free local `docker-compose up`.
-      # Real deployments MUST set ENVIRONMENT=production (see
-      # .env.production.example) — it enforces a real SECRET_KEY and marks
-      # the auth cookie Secure, which requires TLS in front of this app.
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
       - SQL_ECHO=${SQL_ECHO:-false}
@@ -32,13 +30,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-      - POSTGRES_DB=compliance_db
+      - POSTGRES_USER=${POSTGRES_USER:-bookr_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
+      - POSTGRES_DB=${POSTGRES_DB:-compliance_db}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d compliance_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bookr_admin} -d ${POSTGRES_DB:-compliance_db}"]
       interval: 5s
       timeout: 5s
       retries: 5

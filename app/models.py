@@ -27,6 +27,9 @@ class Entity(Base):
     headquarters = Column(String, nullable=False)
     naics_code = Column(String, nullable=False)
 
+    # Security Flag: Restricts visibility & modifications strictly to Super Admins
+    is_restricted = Column(Boolean, default=False, nullable=False)
+
     members = relationship("EntityMember", back_populates="entity", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="assigned_entity", cascade="all, delete-orphan")
 
@@ -46,7 +49,7 @@ class EntityMember(Base):
 
 
 class OrgSettings(Base):
-    #Legacy singleton for fallback if needed
+    # Legacy singleton for fallback if needed
     __tablename__ = "org_settings"
 
     id = Column(Integer, primary_key=True, default=1)
@@ -110,7 +113,7 @@ class ComplianceLog(Base):
     cloud_link = Column(String, nullable=True)
     note = Column(Text, nullable=True)
     file_name = Column(String, nullable=True)
-    file_data = Column(Text, nullable=True) # Now safely stores URL paths instead of heavy Base64 strings
+    file_data = Column(Text, nullable=True)  # Stores URL paths instead of heavy Base64 strings
 
     # SET NULL preserves vital legal compliance history even if the employee account is deleted
     actor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
