@@ -19,14 +19,13 @@ logger = logging.getLogger("bookr.compliance")
 
 from app.database import engine, Base, get_db
 from app import models, schemas
-from app.auth import hash_password, verify_password, create_access_token, get_current_user, ENVIRONMENT
+from app.auth import hash_password, verify_password, create_access_token, get_current_user
 
 from app.seed_data import (
     STATE_TASKS_MAP,
     CORE_TASKS,
     CA_FOR_PROFIT_TASKS,
     DELAWARE_CCORP_TASKS,
-    GENERAL_CORP_TASKS,
     PEBBLE_TASKS,
     NON_PROFIT_TASKS,
     GENERAL_LLC_TASKS
@@ -51,10 +50,6 @@ app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
 # deployment (e.g. "https://app.bookr.com,https://staging.bookr.com").
 _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
 ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
-
-# Browsers (and spec-compliant HTTP clients) silently drop `Secure` cookies over
-# plain HTTP. Only require it in production, where the app should sit behind TLS.
-COOKIE_SECURE = ENVIRONMENT == "production"
 
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
@@ -96,7 +91,7 @@ async def get_current_editor(current_user: models.User = Depends(get_current_use
 
 
 async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int):
-    """Verifies that the user has been granted access to this specific organization."""
+    #Verifies that the user has been granted access to this specific organization
     if user.role == "super_admin":
         return True
     res = await db.execute(select(models.EntityMember).where(
@@ -108,13 +103,13 @@ async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int)
 
 
 async def get_admin_entity_ids(db: AsyncSession, admin: models.User) -> set:
-    """Entities a co_admin is a member of. Callers must special-case super_admin (global access)."""
+    #Entities a co_admin is a member of Callers must special-case super_admin (global access)
     res = await db.execute(select(models.EntityMember.entity_id).where(models.EntityMember.user_id == admin.id))
     return set(res.scalars().all())
 
 
 async def verify_shared_org_access(db: AsyncSession, admin: models.User, target_user_id: int):
-    """For a co_admin, ensures the target user shares at least one org with them. Super Admins bypass."""
+    #For a co_admin, ensures the target user shares at least one org with them. Super Admins bypass
     if admin.role == "super_admin":
         return True
     admin_entities = await get_admin_entity_ids(db, admin)
@@ -151,7 +146,7 @@ async def register(payload: schemas.UserCreate, response: Response, db: AsyncSes
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=COOKIE_SECURE,
+        secure=True,
         samesite="lax",
         max_age=60 * 24 * 7 * 60  # 7 days
     )
@@ -171,7 +166,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=COOKIE_SECURE,
+        secure=True,
         samesite="lax",
         max_age=60 * 24 * 7 * 60  # 7 days
     )
@@ -180,7 +175,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
 
 @app.post("/auth/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="bookr_token", httponly=True, secure=COOKIE_SECURE, samesite="lax")
+    response.delete_cookie(key="bookr_token", httponly=True, secure=True, samesite="lax")
     return {"status": "success"}
 
 
@@ -312,6 +307,7 @@ async def create_user(payload: AdminUserCreate, db: AsyncSession = Depends(get_d
     await db.refresh(user)
     return user
 
+
 @app.delete("/users/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
                       admin: models.User = Depends(get_current_admin)):
@@ -332,6 +328,7 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
     await db.delete(target_user)
     await db.commit()
     return {"status": "success", "message": "User deleted"}
+
 
 # Entity Control & Architecture Core
 @app.post("/entities/", response_model=schemas.EntityResponse)
@@ -364,8 +361,6 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
             template = list(DELAWARE_CCORP_TASKS)
         elif "corp" in org and state == "California":
             template = list(CA_FOR_PROFIT_TASKS)
-        elif "corp" in org:
-            template = list(GENERAL_CORP_TASKS)
         else:
             template = list(CORE_TASKS)
 
@@ -385,6 +380,7 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
 
     await db.commit()
     return entity
+
 
 @app.post("/entities/{entity_id}/assign")
 async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPayload, db: AsyncSession = Depends(get_db),
@@ -412,10 +408,11 @@ async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPaylo
 
     return {"status": "success", "message": "User assigned to entity successfully."}
 
+
 @app.delete("/entities/{entity_id}/assign/{user_id}")
 async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession = Depends(get_db),
                                  current_admin: models.User = Depends(get_current_admin)):
-    #Removes a user's access to a specific organization without deleting their account
+    # Removes a user's access to a specific organization without deleting their account
 
     # Co-Admins may only manage membership for orgs they themselves belong to.
     await verify_org_access(db, current_admin, entity_id)
@@ -431,10 +428,11 @@ async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession 
     await db.commit()
     return {"status": "success", "message": "Access revoked."}
 
+
 @app.delete("/entities/{entity_id}")
 async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
                         current_admin: models.User = Depends(get_current_admin)):
-    #Deletes an entity and cascades to remove all associated tasks and logs
+    # Deletes an entity and cascades to remove all associated tasks and logs
     result = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = result.scalar_one_or_none()
     if not entity:
@@ -446,6 +444,7 @@ async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
     await db.delete(entity)
     await db.commit()
     return {"status": "success", "message": "Entity and associated records purged."}
+
 
 @app.get("/entities/", response_model=List[schemas.EntityResponse])
 async def list_entities(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
@@ -463,7 +462,7 @@ async def list_entities(db: AsyncSession = Depends(get_db), current_admin: model
 
 @app.get("/memberships/")
 async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: models.User = Depends(get_current_admin)):
-    #Returns all user-entity assignments to build the Admin mapping table
+    # Returns all user-entity assignments to build the Admin mapping table
     query = select(models.EntityMember)
 
     if current_admin.role != "super_admin":
@@ -479,6 +478,7 @@ async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: mo
     # Returns a simple list of dicts for the frontend to parse
     return [{"id": m.id, "user_id": m.user_id, "entity_id": m.entity_id} for m in memberships]
 
+
 # Tasks & Logs (Protected)
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
 async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depends(get_db),
@@ -489,12 +489,22 @@ async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depend
         mem_res = await db.execute(
             select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
         allowed_entities = mem_res.scalars().all()
+
+        # Security Override: Strip "Bookr, Inc." access for all non-super_admins
+        bookr_res = await db.execute(select(models.Entity.id).where(models.Entity.name == "Bookr, Inc."))
+        bookr_id = bookr_res.scalar_one_or_none()
+
+        if bookr_id and bookr_id in allowed_entities:
+            allowed_entities.remove(bookr_id)
+
         if not allowed_entities:
             return []
+
         query = select(models.Task).where(models.Task.deleted == False, models.Task.entity_id.in_(allowed_entities))
 
     result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
+
 
 @app.post("/tasks/", response_model=schemas.TaskResponse)
 async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(get_db),
@@ -512,6 +522,7 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
     await db.refresh(task)
     return task
 
+
 @app.delete("/tasks/{task_id}")
 async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
                       editor: models.User = Depends(get_current_editor)):
@@ -526,6 +537,7 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
         await db.commit()
     return {"status": "success"}
 
+
 @app.get("/logs/", response_model=List[schemas.LogResponse])
 async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None, skip: int = 0, limit: int = 2000,
                     db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -535,14 +547,24 @@ async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = 
         mem_res = await db.execute(
             select(models.EntityMember.entity_id).where(models.EntityMember.user_id == current_user.id))
         allowed_entities = mem_res.scalars().all()
+
+        # Security Override: Strip "Bookr, Inc." access for all non-super_admins
+        bookr_res = await db.execute(select(models.Entity.id).where(models.Entity.name == "Bookr, Inc."))
+        bookr_id = bookr_res.scalar_one_or_none()
+
+        if bookr_id and bookr_id in allowed_entities:
+            allowed_entities.remove(bookr_id)
+
         if not allowed_entities:
             return []
+
         query = query.where(models.Task.entity_id.in_(allowed_entities))
 
     if task_id: query = query.where(models.ComplianceLog.task_id == task_id)
     if fiscal_year: query = query.where(models.ComplianceLog.fiscal_year == fiscal_year)
     result = await db.execute(query.order_by(models.ComplianceLog.timestamp.asc()).offset(skip).limit(limit))
     return result.scalars().all()
+
 
 @app.post("/logs/", response_model=schemas.LogResponse)
 async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_db),
@@ -585,6 +607,7 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
                             detail="A compliance log for this exact task and fiscal year already exists.")
     return log
 
+
 @app.delete("/logs/{log_id}")
 async def delete_log(log_id: int, db: AsyncSession = Depends(get_db),
                      editor: models.User = Depends(get_current_editor)):
@@ -597,6 +620,7 @@ async def delete_log(log_id: int, db: AsyncSession = Depends(get_db),
         await db.delete(log)
         await db.commit()
     return {"status": "success"}
+
 
 @app.delete("/logs/")
 async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
@@ -613,11 +637,13 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
     await db.commit()
     return {"status": "success"}
 
+
 @app.get("/auth/is-initialized")
 async def is_initialized(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
     admin_exists = result.scalar_one_or_none() is not None
     return {"initialized": admin_exists}
+
 
 @app.patch("/tasks/{task_id}")
 async def update_task(task_id: int, update_data: TaskUpdate, db: AsyncSession = Depends(get_db),
