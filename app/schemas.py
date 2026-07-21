@@ -79,7 +79,7 @@ class EntityCreate(BaseModel):
     org_type: str
     incorporation_state: USState
     headquarters: str
-    naics_code: str
+    naics_code: str = Field(..., pattern=r'^\d{2,6}$')
     creation_template: str
     is_restricted: Optional[bool] = False
 
@@ -91,7 +91,6 @@ class EntityResponse(BaseModel):
     headquarters: str
     naics_code: str
     is_restricted: bool
-    admin_id: Optional[int] = None
     class Config:
         from_attributes = True
 
@@ -105,10 +104,10 @@ class TaskCreate(BaseModel):
     scope: str = "Internal"
     quarter: str = "ROLL"
     due_type: str = "fixed"
-    due_month: Optional[int] = None
-    due_day: Optional[int] = None
+    due_month: Optional[int] = Field(None, ge=1, le=12)
+    due_day: Optional[int] = Field(None, ge=1, le=31)
     due_text: Optional[str] = None
-    target_year: Optional[int] = None
+    target_year: Optional[int] = Field(None, ge=1900, le=2200)
     entity_id: Optional[int] = None
     entity_name: Optional[str] = None
     entity: Optional[str] = None  # Explicitly None to prevent accidental fallback overrides
@@ -144,7 +143,7 @@ class TaskResponse(BaseModel):
 # Compliance logs
 class LogCreate(BaseModel):
     task_id: int
-    fiscal_year: int
+    fiscal_year: int = Field(..., ge=1900, le=2200)
     action: str = "filed"
     date: Optional[str] = None
     cloud_link: Optional[str] = None

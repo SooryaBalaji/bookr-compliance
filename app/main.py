@@ -1,11 +1,13 @@
+import binascii
 import os
 import base64
+import hmac
 import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Request
+from fastapi import FastAPI, Depends, HTTPException, Query, status, Response, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -41,6 +43,22 @@ ALLOWED_MIME_TYPES = {
     "image/png": ".png",
     "image/webp": ".webp"
 }
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10MB
+
+# Fixed keys for Postgres transaction-scoped advisory locks on global (not
+# per-entity) invariants. Arbitrary but must stay stable and distinct from
+# any entity_id (entity_id starts at 1 and grows small; these are large and
+# won't collide in practice).
+_FIRST_USER_LOCK_KEY = 0x4649525354  # "FIRST"
+_SUPER_ADMIN_COUNT_LOCK_KEY = 0x53555045524144  # "SUPERAD"
+
+
+async def _lock_global_invariant(db: AsyncSession, key: int):
+    """Transaction-scoped advisory lock for invariants that span the whole `users`
+    table (e.g. "at least one super_admin must always exist") rather than a single
+    entity — auto-released on commit/rollback. Postgres-only; see _next_task_num."""
+    if engine.dialect.name == "postgresql":
+        await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": key})
 
 redis_client: Optional[aioredis.Redis] = None
 
@@ -99,9 +117,9 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 class TaskUpdate(BaseModel):
     due_type: str
-    due_month: Optional[int] = None
-    due_day: Optional[int] = None
-    due_text: str
+    due_month: Optional[int] = Field(None, ge=1, le=12)
+    due_day: Optional[int] = Field(None, ge=1, le=31)
+    due_text: Optional[str] = None
 
 
 @app.get("/")
@@ -123,17 +141,21 @@ async def get_current_editor(current_user: models.User = Depends(get_current_use
 
 
 async def verify_org_access(db: AsyncSession, user: models.User, entity_id: int):
-    """Ensures user belongs to organization and enforces hard exclusivity on restricted entities."""
-    if user.role == "super_admin":
-        return True
-
+    """Ensures the entity exists and the user belongs to it, enforcing hard exclusivity
+    on restricted entities. Non-super-admins get the identical error whether the entity
+    doesn't exist, is restricted, or just isn't theirs — distinguishing those cases
+    would let a caller enumerate entity existence/restricted-status they have no
+    business knowing about."""
     entity_res = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = entity_res.scalar_one_or_none()
-    if not entity:
-        raise HTTPException(status_code=404, detail="Organization entity not found.")
 
-    if entity.is_restricted:
-        raise HTTPException(status_code=403, detail="Access denied. Restricted entity records are locked to Super Admins.")
+    if user.role == "super_admin":
+        if not entity:
+            raise HTTPException(status_code=404, detail="Organization entity not found.")
+        return True
+
+    if not entity or entity.is_restricted:
+        raise HTTPException(status_code=403, detail="Cross-organization security violation blocked.")
 
     res = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == user.id, models.EntityMember.entity_id == entity_id
@@ -177,14 +199,18 @@ async def verify_shared_org_access(db: AsyncSession, admin: models.User, target_
 # Auth & User Management
 @app.post("/auth/register")
 async def register(payload: schemas.UserCreate, response: Response, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(models.User).where(models.User.email == payload.email))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already exists")
+    # Lock + check "is registration still open" before anything else. This closes two
+    # issues at once: (1) an email-enumeration leak — an anonymous caller used to be
+    # able to tell "email already exists" (400) apart from "registration closed" (403)
+    # even after the system was initialized; checking registration-open first means
+    # this endpoint only ever returns the generic "disabled" message once any user
+    # exists, and a genuinely-empty DB has no existing emails to collide with anyway.
+    # (2) a TOCTOU race — two simultaneous first-ever registrations could otherwise
+    # both observe zero users and both become super_admin.
+    await _lock_global_invariant(db, _FIRST_USER_LOCK_KEY)
 
     count_result = await db.execute(select(models.User.id))
-    is_first = len(count_result.all()) == 0
-
-    if not is_first:
+    if len(count_result.all()) > 0:
         raise HTTPException(status_code=403, detail="Public registration disabled. Contact a Bookr Super Admin.")
 
     user = models.User(email=payload.email, full_name=payload.full_name, password_hash=hash_password(payload.password),
@@ -271,7 +297,7 @@ async def emergency_password_reset(payload: EmergencyResetPayload, request: Requ
     await _check_emergency_reset_rate_limit(client_ip)
 
     expected_key = os.getenv("MASTER_RESET_KEY")
-    if not expected_key or payload.master_key != expected_key:
+    if not expected_key or not hmac.compare_digest(payload.master_key, expected_key):
         logger.warning("Emergency reset: invalid master key attempt from %s for %s", client_ip, payload.email)
         raise HTTPException(status_code=403, detail="Invalid or disabled master key.")
 
@@ -327,6 +353,9 @@ async def update_user_role(user_id: int, payload: RoleUpdate, db: AsyncSession =
         raise HTTPException(status_code=403, detail="Only Super Admins can grant or revoke Super Admin privileges.")
 
     if user.role == "super_admin" and payload.role != "super_admin":
+        # Lock before counting: two concurrent demotes of two different super_admins
+        # could otherwise both read count=2 and both pass, leaving zero.
+        await _lock_global_invariant(db, _SUPER_ADMIN_COUNT_LOCK_KEY)
         admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot demote the last remaining Super Admin.")
@@ -373,6 +402,7 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db),
     if target_user.role == "super_admin" and target_user.id != admin.id:
         raise HTTPException(status_code=403, detail="Security Violation: Cannot delete other Super Admin accounts.")
     if target_user.role == "super_admin":
+        await _lock_global_invariant(db, _SUPER_ADMIN_COUNT_LOCK_KEY)
         admin_count_result = await db.execute(select(models.User.id).where(models.User.role == "super_admin"))
         if len(admin_count_result.all()) <= 1:
             raise HTTPException(status_code=403, detail="Cannot delete the last remaining Super Admin.")
@@ -400,8 +430,11 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         is_restricted=is_restricted
     )
     db.add(entity)
-    await db.commit()
-    await db.refresh(entity)
+    await db.flush()  # assigns entity.id without committing — the whole entity
+                       # (row + seeded tasks + co_admin membership) commits as one
+                       # transaction below, so a failure partway through rolls back
+                       # cleanly instead of leaving an entity with zero tasks or a
+                       # co_admin unable to see the org they just created.
 
     if payload.creation_template == "bookr":
         template = list(CORE_TASKS)
@@ -422,45 +455,47 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
         elif "corp" in org:
             template = list(GENERAL_CORP_TASKS)
         else:
-            template = list(CORE_TASKS)
+            # Generic fallback for an org_type that matched none of the substrings
+            # above (e.g. "Partnership", "Trust", or free text from a direct API
+            # call) — CORE_TASKS is not a generic template, it's Bookr's own
+            # internal checklist (vendor-specific tasks like Sterling HSA/Anthem),
+            # so an unrelated org must not land there.
+            template = list(GENERAL_CORP_TASKS)
 
+    # "bookr"/"pebble" already encode their own state-specific tasks (e.g. bk_si550,
+    # peb_soi) — layering STATE_TASKS_MAP on top of them would duplicate those.
     selected_state = payload.incorporation_state.value
-    if selected_state in STATE_TASKS_MAP:
-        state_specific_tasks = STATE_TASKS_MAP[selected_state]
-        template.extend(state_specific_tasks)
+    if payload.creation_template not in ("bookr", "pebble") and selected_state in STATE_TASKS_MAP:
+        template.extend(STATE_TASKS_MAP[selected_state])
 
     for t in template:
         task_data = t.copy()
         task_data["entity_id"] = entity.id
         task_data["entity_name"] = entity.name
         task_data["entity"] = entity.name
-        task_data["key"] = f"{task_data.get('key', 'task')}_{entity.id}_{int(__import__('time').time() * 1000)}"
+        task_data["key"] = f"{task_data.get('key', 'task')}_{entity.id}_{uuid.uuid4().hex}"
         db.add(models.Task(is_core=True, deleted=False, **task_data))
-
-    await db.commit()
 
     if admin.role == "co_admin":
         db.add(models.EntityMember(user_id=admin.id, entity_id=entity.id))
-        await db.commit()
 
+    await db.commit()
+    await db.refresh(entity)
     return entity
 
 
 @app.post("/entities/{entity_id}/assign")
 async def assign_entity_member(entity_id: int, payload: schemas.AssignAdminPayload, db: AsyncSession = Depends(get_db),
                                current_admin: models.User = Depends(get_current_admin)):
+    # Check org access before anything else — an existence check on entity_id run
+    # ahead of this would leak entity existence to a caller who has no access to it.
+    await verify_org_access(db, current_admin, entity_id)
+
     user_res = await db.execute(select(models.User).where(models.User.id == payload.admin_id))
     user = user_res.scalar_one_or_none()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
-
-    entity_res = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
-    entity = entity_res.scalar_one_or_none()
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found.")
-
-    await verify_org_access(db, current_admin, entity_id)
 
     existing = await db.execute(select(models.EntityMember).where(
         models.EntityMember.user_id == payload.admin_id, models.EntityMember.entity_id == entity_id
@@ -492,12 +527,12 @@ async def unassign_entity_member(entity_id: int, user_id: int, db: AsyncSession 
 @app.delete("/entities/{entity_id}")
 async def delete_entity(entity_id: int, db: AsyncSession = Depends(get_db),
                         current_admin: models.User = Depends(get_current_admin)):
+    # verify_org_access confirms existence + access together — checking existence
+    # separately first would leak entity existence to a caller who has no access.
+    await verify_org_access(db, current_admin, entity_id)
+
     result = await db.execute(select(models.Entity).where(models.Entity.id == entity_id))
     entity = result.scalar_one_or_none()
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found.")
-
-    await verify_org_access(db, current_admin, entity_id)
 
     await db.delete(entity)
     await db.commit()
@@ -536,7 +571,8 @@ async def list_memberships(db: AsyncSession = Depends(get_db), current_admin: mo
 
 # Tasks & Logs
 @app.get("/tasks/", response_model=List[schemas.TaskResponse])
-async def list_tasks(skip: int = 0, limit: int = 2000, db: AsyncSession = Depends(get_db),
+async def list_tasks(skip: int = Query(0, ge=0), limit: int = Query(2000, ge=1, le=5000),
+                     db: AsyncSession = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
     if current_user.role == "super_admin":
         query = select(models.Task).where(models.Task.deleted == False)
@@ -568,10 +604,21 @@ async def create_task(payload: schemas.TaskCreate, db: AsyncSession = Depends(ge
 
     await verify_org_access(db, editor, payload.entity_id)
 
+    # Derive entity_name/entity from the real entity instead of trusting whatever
+    # the client sent in the payload — otherwise a task with entity_id=5 could be
+    # stored with an unrelated entity_name, since only entity_id is actually used
+    # for authorization/scoping.
+    entity_name = (await db.execute(
+        select(models.Entity.name).where(models.Entity.id == payload.entity_id)
+    )).scalar_one()
+
     key = f"cust_{uuid.uuid4().hex}"
     next_num = await _next_task_num(db, payload.entity_id)
+    task_data = payload.model_dump()
+    task_data["entity_name"] = entity_name
+    task_data["entity"] = entity_name
     task = models.Task(key=key, is_core=False, deleted=False, num=next_num, created_by=editor.id,
-                       **payload.model_dump())
+                       **task_data)
     db.add(task)
     await db.commit()
     await db.refresh(task)
@@ -594,7 +641,8 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db),
 
 
 @app.get("/logs/", response_model=List[schemas.LogResponse])
-async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None, skip: int = 0, limit: int = 2000,
+async def list_logs(task_id: Optional[int] = None, fiscal_year: Optional[int] = None,
+                    skip: int = Query(0, ge=0), limit: int = Query(2000, ge=1, le=5000),
                     db: AsyncSession = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     query = select(models.ComplianceLog).join(models.Task)
 
@@ -630,7 +678,13 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
     await verify_org_access(db, editor, task.entity_id)
 
     saved_file_path = None
-    if payload.file_data and payload.file_data.startswith("data:"):
+    if payload.file_data:
+        # Reject anything that isn't a fresh upload rather than silently dropping it
+        # (there's no "resubmit a previously-saved path" flow, so any other value is
+        # either a mistake or an attempt to store an arbitrary client-controlled string).
+        if not payload.file_data.startswith("data:"):
+            raise HTTPException(status_code=400, detail="file_data must be a base64 data: URI.")
+
         try:
             header, encoded = payload.file_data.split(",", 1)
             mime_type = header.split(";")[0].split(":")[1].lower()
@@ -638,19 +692,25 @@ async def create_log(payload: schemas.LogCreate, db: AsyncSession = Depends(get_
             if mime_type not in ALLOWED_MIME_TYPES:
                 raise HTTPException(status_code=400, detail="Invalid file type. Allowed formats: PDF, JPG, PNG, WEBP.")
 
+            # Base64 inflates size by ~4/3 — check the encoded length before decoding
+            # so an oversized payload isn't fully materialized in memory first.
+            if len(encoded) > MAX_UPLOAD_BYTES * 4 // 3:
+                raise HTTPException(status_code=400, detail="File too large (max 10MB).")
+
             file_ext = ALLOWED_MIME_TYPES[mime_type]
             file_bytes = base64.b64decode(encoded)
-            filename = f"{uuid.uuid4().hex}{file_ext}"
-
-            os.makedirs(UPLOADS_DIR, exist_ok=True)
-            saved_file_path = f"/uploads/{filename}"
-
-            with open(os.path.join(UPLOADS_DIR, filename), "wb") as f:
-                f.write(file_bytes)
         except HTTPException:
             raise
-        except Exception:
+        except (binascii.Error, ValueError, IndexError):
             raise HTTPException(status_code=400, detail="Invalid base64 file payload.")
+
+        # Outside the parsing try/except: a disk I/O failure here is a genuine server
+        # error (500), not a client input mistake, so it shouldn't be mislabeled 400.
+        filename = f"{uuid.uuid4().hex}{file_ext}"
+        os.makedirs(UPLOADS_DIR, exist_ok=True)
+        with open(os.path.join(UPLOADS_DIR, filename), "wb") as f:
+            f.write(file_bytes)
+        saved_file_path = f"/uploads/{filename}"
 
     log_data = payload.model_dump()
     log_data["file_data"] = saved_file_path

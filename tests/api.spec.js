@@ -40,12 +40,27 @@ test.describe('Bookr Compliance API - Task CRUD Lifecycle', () => {
       expect(loginRes.ok(), 'Login failed — set TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD for an existing account').toBeTruthy();
     }
 
-    // Tasks require a target entity; grab the first available one, or skip
-    // entity-scoping if none exist (super_admin can still create org-less tasks).
+    // Tasks require a target entity — entity_id is mandatory on POST /tasks/.
+    // Grab the first available one, or create a throwaway one if none exist yet
+    // (a genuinely fresh database has zero entities).
     const entitiesRes = await apiContext.get('/entities/');
     if (entitiesRes.ok()) {
       const entities = await entitiesRes.json();
       if (entities.length > 0) entityId = entities[0].id;
+    }
+    if (!entityId) {
+      const createRes = await apiContext.post('/entities/', {
+        data: {
+          name: `QA Test Entity ${Date.now()}`,
+          org_type: 'llc',
+          incorporation_state: 'Delaware',
+          headquarters: 'Wilmington, DE',
+          naics_code: '541511',
+          creation_template: 'custom',
+        },
+      });
+      expect(createRes.ok(), 'Failed to create a fallback test entity').toBeTruthy();
+      entityId = (await createRes.json()).id;
     }
   });
 
