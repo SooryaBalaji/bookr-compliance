@@ -14,10 +14,10 @@ from app import models
 # In production, set SECRET_KEY via the environment.
 # The insecure fallback below only applies when ENVIRONMENT is unset or "development" —
 # it refuses to start with a guessable key if ENVIRONMENT=production.
-_ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    if _ENVIRONMENT == "production":
+    if ENVIRONMENT == "production":
         raise RuntimeError("SECRET_KEY environment variable must be set in production.")
     SECRET_KEY = "dev-only-insecure-secret-change-me"
 ALGORITHM = "HS256"

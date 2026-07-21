@@ -19,7 +19,7 @@ logger = logging.getLogger("bookr.compliance")
 
 from app.database import engine, Base, get_db
 from app import models, schemas
-from app.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.auth import hash_password, verify_password, create_access_token, get_current_user, ENVIRONMENT
 
 from app.seed_data import (
     STATE_TASKS_MAP,
@@ -51,6 +51,10 @@ app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
 # deployment (e.g. "https://app.bookr.com,https://staging.bookr.com").
 _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
 ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+
+# Browsers (and spec-compliant HTTP clients) silently drop `Secure` cookies over
+# plain HTTP. Only require it in production, where the app should sit behind TLS.
+COOKIE_SECURE = ENVIRONMENT == "production"
 
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
@@ -147,7 +151,7 @@ async def register(payload: schemas.UserCreate, response: Response, db: AsyncSes
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=60 * 24 * 7 * 60  # 7 days
     )
@@ -167,7 +171,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=60 * 24 * 7 * 60  # 7 days
     )
@@ -176,7 +180,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
 
 @app.post("/auth/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="bookr_token", httponly=True, secure=True, samesite="lax")
+    response.delete_cookie(key="bookr_token", httponly=True, secure=COOKIE_SECURE, samesite="lax")
     return {"status": "success"}
 
 
