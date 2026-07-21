@@ -10,10 +10,15 @@ services:
       - .:/app
       - ./app/uploads:/app/app/uploads
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-bookr_admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
+      # Defaults match the db service's own defaults below, for a friction-free
+      # local `docker-compose up`. Real deployments MUST override
+      # POSTGRES_USER/POSTGRES_PASSWORD (see .env.production.example) — set
+      # them once against a fresh volume; changing them against an existing
+      # one won't work, since Postgres only applies these on first init.
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pass}
       - POSTGRES_DB=${POSTGRES_DB:-compliance_db}
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-bookr_admin}:${POSTGRES_PASSWORD:-change_me_in_prod}@db:5432/${POSTGRES_DB:-compliance_db}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@db:5432/${POSTGRES_DB:-compliance_db}
       - REDIS_URL=redis://cache:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - MASTER_RESET_KEY=${MASTER_RESET_KEY}
@@ -30,13 +35,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-bookr_admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change_me_in_prod}
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pass}
       - POSTGRES_DB=${POSTGRES_DB:-compliance_db}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bookr_admin} -d ${POSTGRES_DB:-compliance_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-compliance_db}"]
       interval: 5s
       timeout: 5s
       retries: 5

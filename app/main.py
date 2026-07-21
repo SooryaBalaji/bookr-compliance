@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text, select
+from sqlalchemy import text, select, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
@@ -20,13 +20,14 @@ logger = logging.getLogger("bookr.compliance")
 
 from app.database import engine, Base, get_db
 from app import models, schemas
-from app.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.auth import hash_password, verify_password, create_access_token, get_current_user, ENVIRONMENT
 
 from app.seed_data import (
     STATE_TASKS_MAP,
     CORE_TASKS,
     CA_FOR_PROFIT_TASKS,
     DELAWARE_CCORP_TASKS,
+    GENERAL_CORP_TASKS,
     PEBBLE_TASKS,
     NON_PROFIT_TASKS,
     GENERAL_LLC_TASKS
@@ -44,6 +45,14 @@ ALLOWED_MIME_TYPES = {
 redis_client: Optional[aioredis.Redis] = None
 
 
+def _entities_table_missing_is_restricted(sync_conn) -> bool:
+    insp = inspect(sync_conn)
+    if "entities" not in insp.get_table_names():
+        return False
+    columns = {c["name"] for c in insp.get_columns("entities")}
+    return "is_restricted" not in columns
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global redis_client
@@ -55,6 +64,12 @@ async def lifespan(app: FastAPI):
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # create_all() only creates missing tables — it never alters an existing
+        # one, so a table that predates the `is_restricted` column needs a manual
+        # backfill. There's no migration framework wired up in this app, so this
+        # is a targeted, idempotent patch rather than a general solution.
+        if await conn.run_sync(_entities_table_missing_is_restricted):
+            await conn.execute(text("ALTER TABLE entities ADD COLUMN is_restricted BOOLEAN NOT NULL DEFAULT FALSE"))
     yield
     if redis_client:
         await redis_client.close()
@@ -65,6 +80,10 @@ app = FastAPI(title="Bookr Compliance API", version="2.5.0", lifespan=lifespan)
 
 _allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
 ALLOWED_ORIGINS = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+
+# Browsers (and spec-compliant HTTP clients) silently drop `Secure` cookies over
+# plain HTTP. Only require it in production, where the app should sit behind TLS.
+COOKIE_SECURE = ENVIRONMENT == "production"
 
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
@@ -166,7 +185,7 @@ async def register(payload: schemas.UserCreate, response: Response, db: AsyncSes
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=60 * 24 * 7 * 60
     )
@@ -186,7 +205,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         key="bookr_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=60 * 24 * 7 * 60
     )
@@ -195,7 +214,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
 
 @app.post("/auth/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="bookr_token", httponly=True, secure=True, samesite="lax")
+    response.delete_cookie(key="bookr_token", httponly=True, secure=COOKIE_SECURE, samesite="lax")
     return {"status": "success"}
 
 
@@ -226,7 +245,10 @@ async def _check_emergency_reset_rate_limit(client_ip: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.warning("Redis rate limiter error: %s", e)
+        # Fail closed: a Redis outage should not silently disable rate limiting
+        # on a master-key-gated endpoint.
+        logger.warning("Redis rate limiter error, denying request: %s", e)
+        raise HTTPException(status_code=503, detail="Rate limiting temporarily unavailable. Try again shortly.")
 
 
 @app.post("/auth/emergency-reset")
@@ -384,6 +406,8 @@ async def create_entity(payload: schemas.EntityCreate, db: AsyncSession = Depend
             template = list(DELAWARE_CCORP_TASKS)
         elif "corp" in org and state == "California":
             template = list(CA_FOR_PROFIT_TASKS)
+        elif "corp" in org:
+            template = list(GENERAL_CORP_TASKS)
         else:
             template = list(CORE_TASKS)
 
@@ -664,7 +688,10 @@ async def clear_all_logs(task_id: Optional[int] = None, fiscal_year: Optional[in
 
 @app.get("/auth/is-initialized")
 async def is_initialized(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(models.User).where(models.User.role == "super_admin"))
+    # limit(1): multiple super_admins is a normal, supported state (see the
+    # "last remaining Super Admin" checks elsewhere) — scalar_one_or_none()
+    # without it throws MultipleResultsFound once a second one exists.
+    result = await db.execute(select(models.User.id).where(models.User.role == "super_admin").limit(1))
     admin_exists = result.scalar_one_or_none() is not None
     return {"initialized": admin_exists}
 

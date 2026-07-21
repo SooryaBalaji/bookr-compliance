@@ -1087,3 +1087,98 @@ GENERAL_LLC_TASKS = [
      'due_text': 'Annually', 'portal_name': 'Internal', 'portal_url': '#',
      'info': 'Annual member meeting to update resolutions.'}
 ]
+
+# Generic C-Corp / S-Corp checklist for entities incorporated outside Delaware and
+# California, where no state-specific corp template exists. State-specific filings
+# still get layered on top via STATE_TASKS_MAP.
+GENERAL_CORP_TASKS = [
+    # January
+    {'key': 'gc_941_4', 'num': 1, 'quarter': 'Q1', 'scope': 'Federal', 'short': '941 Q4',
+     'title': 'Employer’s Quarterly Federal Tax Return - Q4', 'due_type': 'fixed', 'due_month': 1, 'due_day': 31,
+     'due_text': 'January 31', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Reconciles federal income tax withholding for Q4.'},
+    {'key': 'gc_940', 'num': 2, 'quarter': 'Q1', 'scope': 'Federal', 'short': '940 FUTA',
+     'title': 'Federal Annual Unemployment Tax', 'due_type': 'fixed', 'due_month': 1, 'due_day': 31,
+     'due_text': 'January 31', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Assesses FUTA liability on the first $7,000 paid to each W-2 employee.'},
+    {'key': 'gc_1099', 'num': 3, 'quarter': 'Q1', 'scope': 'Federal', 'short': '1099-NEC',
+     'title': 'Form 1099-NEC Filing & Distribution', 'due_type': 'fixed', 'due_month': 1, 'due_day': 31,
+     'due_text': 'January 31', 'portal_name': 'IRS FIRE', 'portal_url': 'https://fire.irs.gov/', 'info': 'Required for unincorporated contractors paid $600+.'},
+    {'key': 'gc_w2', 'num': 4, 'quarter': 'Q1', 'scope': 'Federal', 'short': 'W-2 / W-3',
+     'title': 'Wage and Tax Statements', 'due_type': 'fixed', 'due_month': 1, 'due_day': 31, 'due_text': 'January 31',
+     'portal_name': 'SSA BSO', 'portal_url': 'https://www.ssa.gov/bso/', 'info': 'Transmittal of employee earnings.'},
+
+    # March
+    {'key': 'gc_osha', 'num': 5, 'quarter': 'Q1', 'scope': 'Federal', 'short': 'OSHA 300A',
+     'title': 'OSHA Form 300A Summary Submission', 'due_type': 'fixed', 'due_month': 3, 'due_day': 2,
+     'due_text': 'March 2', 'portal_name': 'OSHA ITA', 'portal_url': 'https://www.osha.gov/injuryreporting/', 'info': 'Electronic submission of work-related injuries/illnesses summary.'},
+    {'key': 'gc_aca', 'num': 6, 'quarter': 'Q1', 'scope': 'Federal', 'short': 'ACA 1094/1095-C',
+     'title': 'Affordable Care Act Employer Reporting', 'due_type': 'fixed', 'due_month': 3, 'due_day': 31,
+     'due_text': 'March 31', 'portal_name': 'IRS AIR', 'portal_url': 'https://www.irs.gov/e-file-providers/air', 'info': 'Electronic filing deadline. Required for Applicable Large Employers (50+ FTEs).'},
+
+    # April
+    {'key': 'gc_1120', 'num': 7, 'quarter': 'Q2', 'scope': 'Federal', 'short': 'Form 1120',
+     'title': 'U.S. Corporation Income Tax Return', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
+     'due_text': 'April 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Core federal income tax return. Can be extended to Oct 15 via Form 7004.'},
+    {'key': 'gc_1120w_1', 'num': 8, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q1',
+     'title': 'Fed Est. Tax - Installment 1', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
+     'due_text': 'April 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Federal estimated tax payment.'},
+    {'key': 'gc_state_tax', 'num': 9, 'quarter': 'Q2', 'scope': 'State', 'short': 'State Corp Tax',
+     'title': 'State Corporate Income / Franchise Tax Return', 'due_type': 'fixed', 'due_month': 4, 'due_day': 15,
+     'due_text': 'April 15', 'portal_name': 'State Dept of Revenue', 'portal_url': 'https://www.usa.gov/state-government', 'info': 'Most states impose a corporate income or franchise tax return separate from the federal 1120.'},
+    {'key': 'gc_941_1', 'num': 10, 'quarter': 'Q2', 'scope': 'Federal', 'short': '941 Q1',
+     'title': 'Employer’s Quarterly Federal Tax Return - Q1', 'due_type': 'fixed', 'due_month': 4, 'due_day': 30,
+     'due_text': 'April 30', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Reconciles federal income tax withholding for Q1.'},
+
+    # June
+    {'key': 'gc_1120w_2', 'num': 11, 'quarter': 'Q2', 'scope': 'Federal', 'short': '1120-W Q2',
+     'title': 'Fed Est. Tax - Installment 2', 'due_type': 'fixed', 'due_month': 6, 'due_day': 15, 'due_text': 'June 15',
+     'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Federal estimated tax payment.'},
+
+    # July
+    {'key': 'gc_941_2', 'num': 12, 'quarter': 'Q3', 'scope': 'Federal', 'short': '941 Q2',
+     'title': 'Employer’s Quarterly Federal Tax Return - Q2', 'due_type': 'fixed', 'due_month': 7, 'due_day': 31,
+     'due_text': 'July 31', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Reconciles federal income tax withholding for Q2.'},
+    {'key': 'gc_5500', 'num': 13, 'quarter': 'Q3', 'scope': 'Federal', 'short': 'Form 5500',
+     'title': 'Annual Return/Report of Employee Benefit Plan', 'due_type': 'fixed', 'due_month': 7, 'due_day': 31,
+     'due_text': 'July 31', 'portal_name': 'EFAST2', 'portal_url': 'https://www.efast.dol.gov/', 'info': 'Required for 401(k) plans and health/welfare plans with 100+ participants.'},
+
+    # September
+    {'key': 'gc_1120w_3', 'num': 14, 'quarter': 'Q3', 'scope': 'Federal', 'short': '1120-W Q3',
+     'title': 'Fed Est. Tax - Installment 3', 'due_type': 'fixed', 'due_month': 9, 'due_day': 15,
+     'due_text': 'September 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Federal estimated tax payment.'},
+
+    # October
+    {'key': 'gc_941_3', 'num': 15, 'quarter': 'Q4', 'scope': 'Federal', 'short': '941 Q3',
+     'title': 'Employer’s Quarterly Federal Tax Return - Q3', 'due_type': 'fixed', 'due_month': 10, 'due_day': 31,
+     'due_text': 'October 31', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Reconciles federal income tax withholding for Q3.'},
+
+    # December
+    {'key': 'gc_1120w_4', 'num': 16, 'quarter': 'Q4', 'scope': 'Federal', 'short': '1120-W Q4',
+     'title': 'Fed Est. Tax - Installment 4', 'due_type': 'fixed', 'due_month': 12, 'due_day': 15,
+     'due_text': 'December 15', 'portal_name': 'EFTPS', 'portal_url': 'https://www.eftps.gov/eftps/', 'info': 'Federal estimated tax payment.'},
+
+    # Rolling / Anniversary Deadlines
+    {'key': 'gc_boi', 'num': 17, 'quarter': 'ROLL', 'scope': 'Federal', 'short': 'FinCEN BOI',
+     'title': 'Beneficial Ownership Information Update', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Within 30 days of change', 'portal_name': 'FinCEN E-Filing', 'portal_url': 'https://boiefiling.fincen.gov/', 'info': 'Updates to controlling persons under the Corporate Transparency Act.'},
+    {'key': 'gc_state_ar', 'num': 18, 'quarter': 'ROLL', 'scope': 'State', 'short': 'State AR',
+     'title': 'Secretary of State Annual Report', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Secretary of State Portal', 'portal_url': 'https://www.usa.gov/state-government', 'info': 'Maintains corporate good standing. Deadline depends on state of incorporation.'},
+    {'key': 'gc_agent', 'num': 19, 'quarter': 'ROLL', 'scope': 'State', 'short': 'Reg. Agent',
+     'title': 'Registered Agent Annual Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Agent Portal', 'portal_url': 'https://www.vcorpservices.com/', 'info': 'Maintains legal good standing in the state of incorporation.'},
+    {'key': 'gc_biz_license', 'num': 20, 'quarter': 'ROLL', 'scope': 'Local', 'short': 'Local License',
+     'title': 'Municipal / County Business License', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'City Portal', 'portal_url': 'https://www.usa.gov/local-governments', 'info': 'Required to legally operate a business.'},
+    {'key': 'gc_minutes', 'num': 21, 'quarter': 'ROLL', 'scope': 'Internal', 'short': 'Corp Minutes',
+     'title': 'Annual Board of Directors & Shareholder Minutes', 'due_type': 'rolling', 'due_month': None,
+     'due_day': None, 'due_text': 'Annually', 'portal_name': 'Internal', 'portal_url': '#', 'info': 'Execute Unanimous Written Consents to maintain the corporate veil.'},
+    {'key': 'gc_gl', 'num': 22, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Gen. Liab.',
+     'title': 'General Liability Insurance Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#', 'info': 'Covers physical premise injuries and property damage.'},
+    {'key': 'gc_do', 'num': 23, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'D&O Insurance',
+     'title': 'Directors & Officers Liability Insurance', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#', 'info': 'Protects board members from personal liability.'},
+    {'key': 'gc_wc', 'num': 24, 'quarter': 'ROLL', 'scope': 'Insurance', 'short': 'Workers Comp',
+     'title': 'Workers Compensation Insurance Renewal', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
+     'due_text': 'Annually', 'portal_name': 'Broker', 'portal_url': '#', 'info': 'Statutory requirement in most states for any W-2 employees.'}
+]

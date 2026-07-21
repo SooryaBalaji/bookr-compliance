@@ -20,6 +20,7 @@ AsyncSessionLocal = sessionmaker(
 # Base class for our models (This connects to the Base we used in models.py)
 Base = declarative_base()
 
+
 # Dependency to get a secure database session in our API routes
 async def get_db():
     async with AsyncSessionLocal() as session:
