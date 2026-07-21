@@ -71,8 +71,9 @@
     .main-panel { flex: 1; display: flex; flex-direction: column; }
     .control-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; flex-direction: column; gap: 16px; }
     .top-bar-row { display: flex; justify-content: space-between; align-items: center; }
-    .header-title-cluster h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
-    .toolbar { display: flex; align-items: center; gap: 12px; }
+    .header-title-cluster h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; white-space: nowrap; }
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .action-row { display: flex; align-items: center; gap: 12px; }
     .view-toggle { display: flex; gap: 8px; }
 
     .view-toggle button, .nav-cluster button, .btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink); padding: 6px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
@@ -272,62 +273,7 @@
                    <option value="s-corp">S-Corporation</option>
                 </select>
               </div>
-              <div class="field">
-                <label>Incorporation State</label>
-                <select id="entityState">
-                  <option value="Delaware">Delaware</option>
-                  <option value="California">California</option>
-                  <option value="Alabama">Alabama</option>
-                  <option value="Alaska">Alaska</option>
-                  <option value="Arizona">Arizona</option>
-                  <option value="Arkansas">Arkansas</option>
-                  <option value="Colorado">Colorado</option>
-                  <option value="Connecticut">Connecticut</option>
-                  <option value="District of Columbia">District of Columbia</option>
-                  <option value="Florida">Florida</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Hawaii">Hawaii</option>
-                  <option value="Idaho">Idaho</option>
-                  <option value="Illinois">Illinois</option>
-                  <option value="Indiana">Indiana</option>
-                  <option value="Iowa">Iowa</option>
-                  <option value="Kansas">Kansas</option>
-                  <option value="Kentucky">Kentucky</option>
-                  <option value="Louisiana">Louisiana</option>
-                  <option value="Maine">Maine</option>
-                  <option value="Maryland">Maryland</option>
-                  <option value="Massachusetts">Massachusetts</option>
-                  <option value="Michigan">Michigan</option>
-                  <option value="Minnesota">Minnesota</option>
-                  <option value="Mississippi">Mississippi</option>
-                  <option value="Missouri">Missouri</option>
-                  <option value="Montana">Montana</option>
-                  <option value="Nebraska">Nebraska</option>
-                  <option value="Nevada">Nevada</option>
-                  <option value="New Hampshire">New Hampshire</option>
-                  <option value="New Jersey">New Jersey</option>
-                  <option value="New Mexico">New Mexico</option>
-                  <option value="New York">New York</option>
-                  <option value="North Carolina">North Carolina</option>
-                  <option value="North Dakota">North Dakota</option>
-                  <option value="Ohio">Ohio</option>
-                  <option value="Oklahoma">Oklahoma</option>
-                  <option value="Oregon">Oregon</option>
-                  <option value="Pennsylvania">Pennsylvania</option>
-                  <option value="Rhode Island">Rhode Island</option>
-                  <option value="South Carolina">South Carolina</option>
-                  <option value="South Dakota">South Dakota</option>
-                  <option value="Tennessee">Tennessee</option>
-                  <option value="Texas">Texas</option>
-                  <option value="Utah">Utah</option>
-                  <option value="Vermont">Vermont</option>
-                  <option value="Virginia">Virginia</option>
-                  <option value="Washington">Washington</option>
-                  <option value="West Virginia">West Virginia</option>
-                  <option value="Wisconsin">Wisconsin</option>
-                  <option value="Wyoming">Wyoming</option>
-                </select>
-              </div>
+              <div class="field"><label>Incorporation State</label><input type="text" id="entityState" placeholder="e.g. Delaware"></div>
               <div class="field"><label>NAICS Code</label><input type="text" id="entityNaics" placeholder="6-digit code"></div>
             </div>
             <div class="field full-width"><label>Headquarters Location</label><input type="text" id="entityHq" placeholder="City, State"></div>
@@ -415,6 +361,9 @@
           <div class="header-title-cluster">
             <h2 id="monthTitle">Corporate Framework View</h2>
           </div>
+        </div>
+
+        <div class="top-bar-row">
           <div class="toolbar">
             <div class="search-group">
               <select id="quickFilterSelect" style="border-radius: var(--radius) 0 0 var(--radius);">
@@ -440,9 +389,13 @@
             </div>
 
             <div class="view-toggle"></div>
+          </div>
+        </div>
+
+        <div class="top-bar-row">
+          <div class="action-row">
             <button id="addMilestoneBtn" class="btn small primary" style="display:none;">+ Add Task</button>
             <button id="generateReportBtn" class="btn small primary" style="background:var(--ink); border-color:var(--ink);">Generate Report</button>
-            <button id="exportCsv" class="btn small">Export Ledger</button>
           </div>
         </div>
 
@@ -627,6 +580,7 @@
     } catch (e) { showAuthScreen(); }
   }
 
+  // UPDATED: Added activeEntity tracking
   let TASKS = [];
   let STATE_LOGS = [];
   let state = { currentView: 'list', currentYear: 2026, currentMonth: 6, selectedScopes: ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'], selectedStatuses: ['overdue', 'soon', 'month', 'filed', 'upcoming', 'needsdate'], searchQuery: '', quickFilter: 'all', activeEntity: 'all' };
@@ -654,7 +608,6 @@
       document.getElementById('yearSelect').addEventListener('change', (e) => { state.currentYear = parseInt(e.target.value); render(); });
       document.getElementById('searchBox').addEventListener('input', (e) => { state.searchQuery = e.target.value.trim().toLowerCase(); render(); });
       document.getElementById('quickFilterSelect').addEventListener('change', (e) => { state.quickFilter = e.target.value; render(); });
-      document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
       document.getElementById('generateReportBtn').addEventListener('click', generateStatusReport);
       document.getElementById('addMilestoneBtn').addEventListener('click', openAddMilestoneWizard);
       document.getElementById('modalCloseBtn').addEventListener('click', closeModalWindow);
@@ -684,7 +637,7 @@
           creation_template: document.getElementById('entityTemplate').value,
           name: document.getElementById('entityName').value.trim(),
           org_type: document.getElementById('entityOrgType').value,
-          incorporation_state: document.getElementById('entityState').value,
+          incorporation_state: document.getElementById('entityState').value.trim(),
           headquarters: document.getElementById('entityHq').value.trim(),
           naics_code: document.getElementById('entityNaics').value.trim()
       };
@@ -825,7 +778,7 @@
   function buildYearDropdownSelectors() {
     const select = document.getElementById('yearSelect');
     select.innerHTML = '';
-    for(let y = 2024; y <= 2035; y++) {
+    for(let y = 2024; y <= 2050; y++) {
       const opt = document.createElement('option');
       opt.value = y;
       opt.textContent = `${y} Fiscal Year`;
@@ -885,7 +838,7 @@
   }
 
   function getStatusLabel(status) {
-    switch(status) { case 'overdue': return 'Overdue'; case 'soon': return 'Action Imminent (< 14D)'; case 'month': return 'Due < 30 Days'; case 'filed': return 'Filed'; case 'upcoming': return 'Future Deadline'; case 'needsdate': return 'Unscheduled'; }
+    switch(status) { case 'overdue': return 'Overdue'; case 'soon': return 'Action Imminent (< 14 Days)'; case 'month': return 'Due < 30 Days'; case 'filed': return 'Filed'; case 'upcoming': return 'Future Deadline'; case 'needsdate': return 'Unscheduled'; }
     return '';
   }
 
@@ -900,7 +853,7 @@
 
   function getFilteredTasks() {
     return TASKS.filter(t => {
-      // Filter out tasks if an entity is selected
+      // NEW: Filter out tasks if an entity is selected
       if (state.activeEntity !== 'all' && t.entity !== state.activeEntity) return false;
 
       if (!state.selectedScopes.includes(t.scope)) return false;
@@ -933,6 +886,7 @@
     });
   }
 
+  // NEW: Renders the Entity Switcher Buttons dynamically
   function renderEntitySwitcher() {
       const container = document.getElementById('entitySwitcherList');
       if (!container) return;
@@ -963,13 +917,14 @@
 
   function render() {
     renderSidebarFilters();
-    renderEntitySwitcher();
+    renderEntitySwitcher(); // Execute new UI rendering
 
     const title = document.getElementById('monthTitle');
     const navControls = document.getElementById('calNavCluster');
     const workspace = document.getElementById('mainContent');
     document.getElementById('matrixYearLabel').textContent = `(FY ${state.currentYear})`;
 
+    // NEW: Update Dashboard Title dynamically based on active entity
     let prefix = state.activeEntity === 'all' ? 'Global Portfolio' : state.activeEntity;
 
     if (state.currentView === 'calendar') {
@@ -978,7 +933,7 @@
       navControls.style.display = 'flex';
       renderCalendarGrid(workspace);
     } else if (state.currentView === 'list') {
-      title.textContent = `${prefix} | Master Ledger (${state.currentYear})`;
+      title.textContent = `${prefix} | List View (${state.currentYear})`;
       navControls.style.display = 'flex';
       renderMasterLedgerView(workspace);
     } else if (state.currentView === 'archive') {
@@ -1365,7 +1320,10 @@
     const month = currentTasks.filter(t => getTaskStatus(t) === 'month');
 
     let html = `
-      <div style="font-size: 15px; margin-bottom: 24px; color: var(--ink-dim);">Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 16px; margin-bottom: 24px;">
+        <div style="font-size: 15px; color: var(--ink-dim);">Framework Objectives Summary for <strong>Fiscal Cycle ${state.currentYear}</strong> based on your current filters.</div>
+        <button id="exportCsv" class="btn small" style="flex-shrink:0;">Export Ledger</button>
+      </div>
       <div class="task-form-three-col" style="margin-bottom: 32px;">
         <div class="report-stat-box"><h4>Executed Forms</h4><h2 style="color: var(--filed)">${filed.length}</h2></div>
         <div class="report-stat-box" style="border-color: var(--soon);"><h4 style="color: var(--soon)">Action Imminent</h4><h2 style="color: var(--soon)">${soon.length}</h2></div>
@@ -1386,6 +1344,7 @@
     document.getElementById('modalTitle').textContent = `Bookr Compliance Status Report`;
     document.getElementById('modalBody').innerHTML = html;
     document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('exportCsv').addEventListener('click', exportToCsvArchive);
   }
 
   async function openAddMilestoneWizard() {
