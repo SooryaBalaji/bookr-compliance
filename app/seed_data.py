@@ -920,3 +920,4 @@ GENERAL_LLC_TASKS = [
      'title': 'LLC Operating Agreement Review', 'due_type': 'rolling', 'due_month': None, 'due_day': None,
      'due_text': 'Annually', 'portal_name': 'Internal', 'portal_url': '#', 'info': 'Annual member meeting to update resolutions.'}
 ]
+
