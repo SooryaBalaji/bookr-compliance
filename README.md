@@ -13,7 +13,7 @@ Regulatory compliance and automated corporate filing tracker for Bookr, Inc.
 
 1. Copy `.env.example` to `.env` and pick a real secret:
    ```
-   openssl rand -hex 32   # paste the result in as SECRET_KEY
+   python3 -c "import secrets; print(secrets.token_hex(32))"   # paste the result in as SECRET_KEY
    ```
 2. Run `docker-compose up` to start the backend, Postgres, and Redis.
 3. Open `http://localhost:8000`.
