@@ -997,6 +997,7 @@
     const scopeThemeMap = { 'Federal':'fed', 'California':'ca', 'Delaware':'de', 'Internal':'intl', 'Insurance':'ins' };
     ['Federal', 'California', 'Delaware', 'Internal', 'Insurance'].forEach(sc => {
       const count = TASKS.filter(t => t.scope === sc).length;
+      if (count === 0) return;
       const active = state.selectedScopes.includes(sc);
       const row = document.createElement('div');
       row.className = `scope-line ${active ? '' : 'off'}`;
